@@ -3,8 +3,8 @@
 - Application Name: С8 Расчеты
 - Package Name: com.pavel.c8calculations
 - Application ID: com.pavel.c8calculations
-- Version Name: 0.1.0
-- Version Code: 1
+- Version Name: 0.1.1
+- Version Code: 2
 - Current Phase: PHASE 6 COMPLETE
 
 ## Toolchain pinned
@@ -61,10 +61,12 @@ OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 
 ## Known Problems
 - No known PHASE 6 build/test errors.
-- Current build remains debug-signed; permanent release signing remains a separate setup task.
+- Release signing is configured through protected GitHub Actions secrets; signed release APK builds use the permanent C8 keystore.
 
 ## Last Completed Task
 PHASE 6 — Profit screen «До баланса» and target-balance calculation.
 
 ## Next Task
 PHASE 7 — improve Profit screen UX and add day-by-day calculation details.
+
+- Update mechanism: versionCode increments for install-over-existing updates; release APK uses the permanent signing key.
