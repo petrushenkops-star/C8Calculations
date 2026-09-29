@@ -5,7 +5,7 @@
 - Application ID: com.pavel.c8calculations
 - Version Name: 0.1.0
 - Version Code: 1
-- Current Phase: PHASE 5 COMPLETE
+- Current Phase: PHASE 6 COMPLETE
 
 ## Toolchain pinned
 - Android Gradle Plugin: 9.4.0
@@ -43,13 +43,16 @@
 - PHASE 5 connects the Profit screen to ProfitSimulationEngine for the «До даты» scenario.
 - Profit UI accepts level, balance, start/end dates, X, VIP, L1 and auto-upgrade.
 - Profit UI displays expected balance, resulting level, level deposit, gross profit, 30% amount and net 70% profit.
+- PHASE 6 adds TargetBalanceCalculator and the Profit screen «До баланса» scenario.
+- Target mode stops on the first calendar day when balance reaches or exceeds the target; an already reached target returns 0 days and the start date.
+- Target result includes reached date, calendar days, total signals, total income, reached balance, final level/deposit, gross profit, 30% and net 70% profit.
 - CI runs unit tests before assembling APK.
 
 ## Not implemented by design
 OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 
 ## Tested
-- GitHub Actions run 36551382762.
+- GitHub Actions run 36562111362.
 - :app:testDebugUnitTest: SUCCESS.
 - :app:assembleDebug: SUCCESS.
 - APK existence verification: SUCCESS.
@@ -57,11 +60,11 @@ OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 - Artifact: C8Calculations-v0.1.0-debug.
 
 ## Known Problems
-- No known PHASE 5 build/test errors.
+- No known PHASE 6 build/test errors.
 - Current build remains debug-signed; permanent release signing remains a separate setup task.
 
 ## Last Completed Task
-PHASE 5 — connect the Profit screen «До даты» to the calculation core.
+PHASE 6 — Profit screen «До баланса» and target-balance calculation.
 
 ## Next Task
-PHASE 6 — add the Profit screen «До баланса» scenario.
+PHASE 7 — improve Profit screen UX and add day-by-day calculation details.
