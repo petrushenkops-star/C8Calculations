@@ -42,12 +42,13 @@ fun ProfitScreen(onBack: () -> Unit) {
     var l1AtLeast10 by remember { mutableStateOf(preferences.getBoolean("l1AtLeast10", false)) }
     var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
     var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
+    var usdtRubRate by remember { mutableStateOf(preferences.getString("usdtRubRate", "80") ?: "80") }
     var targetMode by remember { mutableStateOf(preferences.getBoolean("targetMode", false)) }
     var dateResultText by remember { mutableStateOf<String?>(null) }
     var targetResultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetMode) {
+    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, usdtRubRate, targetMode) {
         preferences.edit()
             .putString("level", level.name)
             .putString("balance", balance)
@@ -56,6 +57,7 @@ fun ProfitScreen(onBack: () -> Unit) {
             .putBoolean("l1AtLeast10", l1AtLeast10)
             .putBoolean("autoUpgrade", autoUpgrade)
             .putString("targetBalance", targetBalance)
+            .putString("usdtRubRate", usdtRubRate)
             .putBoolean("targetMode", targetMode)
             .apply()
     }
@@ -63,6 +65,8 @@ fun ProfitScreen(onBack: () -> Unit) {
     fun calculate() {
         try {
             val from = LocalDate.parse(startDate.trim())
+            val rubRate = BigDecimal(usdtRubRate.trim().replace(',', '.'))
+            require(rubRate.signum() > 0) { "Курс USDT должен быть больше 0" }
             if (targetMode) {
                 val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
                 targetResultText = buildString {
@@ -76,7 +80,8 @@ fun ProfitScreen(onBack: () -> Unit) {
                     appendLine("Депозит уровня: ${targetResult.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
                     appendLine("Прибыль до удержания: ${targetResult.grossProfit.stripTrailingZeros().toPlainString()} USDT")
                     appendLine("Комиссия 30%: ${targetResult.withholding.stripTrailingZeros().toPlainString()} USDT")
-                    append("Чистая прибыль 70%: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("Чистая прибыль 70%: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                    append("Чистая прибыль, ₽: ${targetResult.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
                 }
                 errorText = null
                 return
@@ -103,7 +108,8 @@ fun ProfitScreen(onBack: () -> Unit) {
                 appendLine("Депозит уровня: ${result.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
                 appendLine("Прибыль до удержания: ${result.grossProfit.stripTrailingZeros().toPlainString()} USDT")
                 appendLine("Комиссия 30%: ${result.withholding.stripTrailingZeros().toPlainString()} USDT")
-                append("Чистая прибыль 70%: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                appendLine("Чистая прибыль 70%: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                append("Чистая прибыль, ₽: ${result.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
             }
             errorText = null
         } catch (_: DateTimeParseException) {
@@ -168,6 +174,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                 )
             }
             NumberField("Кол-во лидерских сигналов", x) { x = it }
+            NumberField("Курс USDT, ₽", usdtRubRate) { usdtRubRate = it }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Кол-во участников на L1 ≥ 10")
                 Checkbox(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
