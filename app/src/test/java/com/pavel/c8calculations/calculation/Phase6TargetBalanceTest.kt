@@ -19,6 +19,7 @@ class Phase6TargetBalanceTest {
         )
         assertEquals(start, result.reachedDate)
         assertEquals(0, result.daysCount)
+        assertEquals(0, result.reachedAfterSignal)
         assertEquals(0, result.totalSignals)
         assertMoney("0", result.totalIncome)
         assertMoney("700", result.reachedBalance)
@@ -36,6 +37,7 @@ class Phase6TargetBalanceTest {
         )
         assertEquals(LocalDate.of(2026, 9, 29), result.reachedDate)
         assertEquals(2, result.daysCount)
+        assertEquals(2, result.reachedAfterSignal)
         assertEquals(4, result.totalSignals)
         assertMoney("16.0", result.totalIncome)
         assertMoney("713.6", result.reachedBalance)
@@ -55,9 +57,10 @@ class Phase6TargetBalanceTest {
             )
         )
         assertEquals(2, result.daysCount)
-        assertEquals(4, result.totalSignals)
-        assertMoney("256", result.totalIncome)
-        assertMoney("10206", result.reachedBalance)
+        assertEquals(1, result.reachedAfterSignal)
+        assertEquals(3, result.totalSignals)
+        assertMoney("176", result.totalIncome)
+        assertMoney("10126", result.reachedBalance)
         assertEquals(ParticipantLevel.C6, result.finalLevel)
     }
 
@@ -72,6 +75,7 @@ class Phase6TargetBalanceTest {
                 autoUpgradeEnabled = false,
             )
         )
+        assertEquals(2, result.reachedAfterSignal)
         assertMoney("304.8", result.reachedBalance)
         assertMoney("4.8", result.grossProfit)
         assertMoney("1.440", result.withholding)
