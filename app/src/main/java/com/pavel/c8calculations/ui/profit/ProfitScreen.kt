@@ -13,9 +13,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
 import com.pavel.c8calculations.calculation.TargetBalanceCalculator
+import com.pavel.c8calculations.calculation.TargetNetProfitCalculator
 import com.pavel.c8calculations.model.ParticipantLevel
 import com.pavel.c8calculations.model.ProfitSimulationInput
 import com.pavel.c8calculations.model.TargetBalanceInput
+import com.pavel.c8calculations.model.TargetNetProfitInput
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -42,13 +44,15 @@ fun ProfitScreen(onBack: () -> Unit) {
     var l1AtLeast10 by remember { mutableStateOf(preferences.getBoolean("l1AtLeast10", false)) }
     var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
     var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
+    var targetNetProfit by remember { mutableStateOf(preferences.getString("targetNetProfit", "100") ?: "100") }
     var usdtRubRate by remember { mutableStateOf(preferences.getString("usdtRubRate", "80") ?: "80") }
-    var targetMode by remember { mutableStateOf(preferences.getBoolean("targetMode", false)) }
+    var calculationMode by remember { mutableStateOf(preferences.getString("calculationMode", if (preferences.getBoolean("targetMode", false)) "BALANCE" else "DATE") ?: "DATE") }
     var dateResultText by remember { mutableStateOf<String?>(null) }
     var targetResultText by remember { mutableStateOf<String?>(null) }
+    var netProfitResultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, usdtRubRate, targetMode) {
+    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, usdtRubRate, calculationMode) {
         preferences.edit()
             .putString("level", level.name)
             .putString("balance", balance)
@@ -57,8 +61,9 @@ fun ProfitScreen(onBack: () -> Unit) {
             .putBoolean("l1AtLeast10", l1AtLeast10)
             .putBoolean("autoUpgrade", autoUpgrade)
             .putString("targetBalance", targetBalance)
+            .putString("targetNetProfit", targetNetProfit)
             .putString("usdtRubRate", usdtRubRate)
-            .putBoolean("targetMode", targetMode)
+            .putString("calculationMode", calculationMode)
             .apply()
     }
 
@@ -67,22 +72,15 @@ fun ProfitScreen(onBack: () -> Unit) {
             val from = LocalDate.parse(startDate.trim())
             val rubRate = BigDecimal(usdtRubRate.trim().replace(',', '.'))
             require(rubRate.signum() > 0) { "Курс USDT должен быть больше 0" }
-            if (targetMode) {
+            if (calculationMode == "BALANCE") {
                 val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
-                targetResultText = buildString {
-                    appendLine("Дата достижения: ${targetResult.reachedDate}")
-                    appendLine("После сигнала: ${targetResult.reachedAfterSignal}")
-                    appendLine("Календарных дней: ${targetResult.daysCount}")
-                    appendLine("Сигналов: ${targetResult.totalSignals}")
-                    appendLine("Доход за период: ${targetResult.totalIncome.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("Достигнутый баланс: ${targetResult.reachedBalance.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("Итоговый уровень: ${targetResult.finalLevel}")
-                    appendLine("Депозит уровня: ${targetResult.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("Прибыль до удержания: ${targetResult.grossProfit.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("Комиссия 30%: ${targetResult.withholding.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("Чистая прибыль: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
-                    append("Чистая прибыль, ₽: ${targetResult.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
-                }
+                targetResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
+                errorText = null
+                return
+            }
+            if (calculationMode == "NET_PROFIT") {
+                val targetResult = TargetNetProfitCalculator.calculate(TargetNetProfitInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetNetProfit.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
+                netProfitResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
                 errorText = null
                 return
             }
@@ -113,13 +111,13 @@ fun ProfitScreen(onBack: () -> Unit) {
             }
             errorText = null
         } catch (_: DateTimeParseException) {
-            if (targetMode) targetResultText = null else dateResultText = null
+            if (calculationMode == "BALANCE") targetResultText = null else if (calculationMode == "NET_PROFIT") netProfitResultText = null else dateResultText = null
             errorText = "Дата должна быть в формате ГГГГ-ММ-ДД"
         } catch (_: NumberFormatException) {
-            if (targetMode) targetResultText = null else dateResultText = null
+            if (calculationMode == "BALANCE") targetResultText = null else if (calculationMode == "NET_PROFIT") netProfitResultText = null else dateResultText = null
             errorText = "Проверьте числовые поля"
         } catch (e: IllegalArgumentException) {
-            if (targetMode) targetResultText = null else dateResultText = null
+            if (calculationMode == "BALANCE") targetResultText = null else if (calculationMode == "NET_PROFIT") netProfitResultText = null else dateResultText = null
             errorText = e.message ?: "Проверьте введённые данные"
         }
     }
@@ -138,10 +136,11 @@ fun ProfitScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = !targetMode, onClick = { targetMode = false; dateResultText = null; errorText = null }, label = { Text("До даты") })
-                FilterChip(selected = targetMode, onClick = { targetMode = true; targetResultText = null; errorText = null }, label = { Text("До баланса") })
+                FilterChip(selected = calculationMode == "DATE", onClick = { calculationMode = "DATE"; dateResultText = null; errorText = null }, label = { Text("До даты") })
+                FilterChip(selected = calculationMode == "BALANCE", onClick = { calculationMode = "BALANCE"; targetResultText = null; errorText = null }, label = { Text("До баланса") })
             }
-            Text(if (targetMode) "Расчёт до баланса" else "Расчёт до даты", style = MaterialTheme.typography.titleLarge)
+            FilterChip(selected = calculationMode == "NET_PROFIT", onClick = { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }, label = { Text("До чистой прибыли") })
+            Text(when (calculationMode) { "BALANCE" -> "Расчёт до баланса"; "NET_PROFIT" -> "Расчёт до чистой прибыли"; else -> "Расчёт до даты" }, style = MaterialTheme.typography.titleLarge)
 
             Text("Текущий уровень")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -164,8 +163,10 @@ fun ProfitScreen(onBack: () -> Unit) {
                 label = { Text("Дата начала (ГГГГ-ММ-ДД)") }, singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (targetMode) {
+            if (calculationMode == "BALANCE") {
                 NumberField("Целевой баланс, USDT", targetBalance) { targetBalance = it }
+            } else if (calculationMode == "NET_PROFIT") {
+                NumberField("Целевая чистая прибыль, USDT", targetNetProfit) { targetNetProfit = it }
             } else {
                 TextField(
                     value = endDate, onValueChange = { endDate = it },
@@ -192,13 +193,34 @@ fun ProfitScreen(onBack: () -> Unit) {
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) { Text("Рассчитать") }
 
             errorText?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            (if (targetMode) targetResultText else dateResultText)?.let {
+            (when (calculationMode) { "BALANCE" -> targetResultText; "NET_PROFIT" -> netProfitResultText; else -> dateResultText })?.let {
                 Card(Modifier.fillMaxWidth()) {
                     Text(it, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
     }
+}
+
+
+private fun formatTargetResult(
+    reachedDate: LocalDate, reachedAfterSignal: Int, daysCount: Int, totalSignals: Int,
+    totalIncome: BigDecimal, reachedBalance: BigDecimal, finalLevel: String,
+    currentDeposit: BigDecimal, grossProfit: BigDecimal, withholding: BigDecimal,
+    netProfit: BigDecimal, rubRate: BigDecimal
+): String = buildString {
+    appendLine("Дата достижения: $reachedDate")
+    appendLine("После сигнала: $reachedAfterSignal")
+    appendLine("Календарных дней: $daysCount")
+    appendLine("Сигналов: $totalSignals")
+    appendLine("Доход за период: ${totalIncome.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Достигнутый баланс: ${reachedBalance.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Итоговый уровень: $finalLevel")
+    appendLine("Депозит уровня: ${currentDeposit.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Прибыль до удержания: ${grossProfit.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Комиссия 30%: ${withholding.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Чистая прибыль: ${netProfit.stripTrailingZeros().toPlainString()} USDT")
+    append("Чистая прибыль, ₽: ${netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
 }
 
 @Composable
