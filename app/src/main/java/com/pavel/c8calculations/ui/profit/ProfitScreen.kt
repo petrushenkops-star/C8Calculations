@@ -40,7 +40,7 @@ fun ProfitScreen(onBack: () -> Unit) {
             val from = LocalDate.parse(startDate.trim())
             if (targetMode) {
                 val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
-                resultText = "Дата достижения: "+targetResult.reachedDate+"\nКалендарных дней: "+targetResult.daysCount+"\nСигналов: "+targetResult.totalSignals+"\nДоход за период: "+targetResult.totalIncome.stripTrailingZeros().toPlainString()+" USDT\nДостигнутый баланс: "+targetResult.reachedBalance.stripTrailingZeros().toPlainString()+" USDT\nИтоговый уровень: "+targetResult.finalLevel+"\nДепозит уровня: "+targetResult.currentDeposit.stripTrailingZeros().toPlainString()+" USDT\nПрибыль до удержания: "+targetResult.grossProfit.stripTrailingZeros().toPlainString()+" USDT\n30%: "+targetResult.withholding.stripTrailingZeros().toPlainString()+" USDT\nЧистая прибыль 70%: "+targetResult.netProfit.stripTrailingZeros().toPlainString()+" USDT"
+                resultText = "Дата достижения: "+targetResult.reachedDate+"\nКалендарных дней: "+targetResult.daysCount+"\nДостигнуто после сигнала №: "+targetResult.reachedAfterSignal+"\nСигналов: "+targetResult.totalSignals+"\nДоход за период: "+targetResult.totalIncome.stripTrailingZeros().toPlainString()+" USDT\nДостигнутый баланс: "+targetResult.reachedBalance.stripTrailingZeros().toPlainString()+" USDT\nИтоговый уровень: "+targetResult.finalLevel+"\nДепозит уровня: "+targetResult.currentDeposit.stripTrailingZeros().toPlainString()+" USDT\nПрибыль до удержания: "+targetResult.grossProfit.stripTrailingZeros().toPlainString()+" USDT\n30%: "+targetResult.withholding.stripTrailingZeros().toPlainString()+" USDT\nЧистая прибыль 70%: "+targetResult.netProfit.stripTrailingZeros().toPlainString()+" USDT"
                 errorText = null
                 return
             }
@@ -138,11 +138,11 @@ fun ProfitScreen(onBack: () -> Unit) {
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("VIP")
-                Switch(checked = vip, onCheckedChange = { vip = it })
+                Checkbox(checked = vip, onCheckedChange = { vip = it })
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Автопереход между уровнями")
-                Switch(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
+                Checkbox(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
             }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) { Text("Рассчитать") }
