@@ -132,8 +132,8 @@ fun ProfitScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = !targetMode, onClick = { targetMode = false; errorText = null }, label = { Text("До даты") })
-                FilterChip(selected = targetMode, onClick = { targetMode = true; errorText = null }, label = { Text("До баланса") })
+                FilterChip(selected = !targetMode, onClick = { targetMode = false; dateResultText = null; errorText = null }, label = { Text("До даты") })
+                FilterChip(selected = targetMode, onClick = { targetMode = true; targetResultText = null; errorText = null }, label = { Text("До баланса") })
             }
             Text(if (targetMode) "Расчёт до баланса" else "Расчёт до даты", style = MaterialTheme.typography.titleLarge)
 
