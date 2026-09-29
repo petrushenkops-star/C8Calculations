@@ -5,7 +5,7 @@
 - Application ID: com.pavel.c8calculations
 - Version Name: 0.1.0
 - Version Code: 1
-- Current Phase: PHASE 4 COMPLETE
+- Current Phase: PHASE 5 COMPLETE
 
 ## Toolchain pinned
 - Android Gradle Plugin: 9.4.0
@@ -40,13 +40,16 @@
 - Auto-upgrade selects the maximum level whose deposit threshold is reached; balance is not reduced.
 - Auto-upgrade can be disabled.
 - Gross profit = expected balance - deposit of the resulting level; 30% withholding is calculated separately and does not reduce simulation balance; net profit = gross profit × 70%.
+- PHASE 5 connects the Profit screen to ProfitSimulationEngine for the «До даты» scenario.
+- Profit UI accepts level, balance, start/end dates, X, VIP, L1 and auto-upgrade.
+- Profit UI displays expected balance, resulting level, level deposit, gross profit, 30% amount and net 70% profit.
 - CI runs unit tests before assembling APK.
 
 ## Not implemented by design
 OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 
 ## Tested
-- GitHub Actions run 36550773008.
+- GitHub Actions run 36551382762.
 - :app:testDebugUnitTest: SUCCESS.
 - :app:assembleDebug: SUCCESS.
 - APK existence verification: SUCCESS.
@@ -54,11 +57,11 @@ OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 - Artifact: C8Calculations-v0.1.0-debug.
 
 ## Known Problems
-- No known PHASE 4 build/test errors.
+- No known PHASE 5 build/test errors.
 - Current build remains debug-signed; permanent release signing remains a separate setup task.
 
 ## Last Completed Task
-PHASE 4 — multi-day profit forecast and automatic level-upgrade logic.
+PHASE 5 — connect the Profit screen «До даты» to the calculation core.
 
 ## Next Task
-PHASE 5 — connect calculation core to the Profit screen UI.
+PHASE 6 — add the Profit screen «До баланса» scenario.
