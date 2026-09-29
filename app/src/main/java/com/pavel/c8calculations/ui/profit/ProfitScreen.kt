@@ -166,11 +166,6 @@ fun ProfitScreen(onBack: () -> Unit) {
                     Text(it, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
-
-            if (targetMode) {
-                HorizontalDivider()
-                Text("Расчёт останавливается в первый календарный день, когда баланс достигает или превышает цель.")
-            }
         }
     }
 }
