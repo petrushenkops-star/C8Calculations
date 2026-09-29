@@ -56,14 +56,23 @@ object TargetBalanceCalculator {
             if (balance < input.targetBalance) date = date.plusDays(1)
         }
 
+        val reachedAfterSignal = if (days.isEmpty()) 0 else {
+            val last = days.last()
+            val balanceBeforeLastDay = last.balanceAfter.subtract(last.dailyIncome)
+            val missing = input.targetBalance.subtract(balanceBeforeLastDay)
+            missing.divide(last.incomePerSignal, 0, java.math.RoundingMode.CEILING).toInt()
+                .coerceIn(1, last.signalCount)
+        }
+
         val deposit = LevelConfiguration.forLevel(level).deposit
         val gross = balance.subtract(deposit)
         return TargetBalanceResult(
             reachedDate = if (days.isEmpty()) input.startDate else days.last().date,
             daysCount = days.size,
-            totalSignals = days.sumOf { it.signalCount },
-            totalIncome = days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.dailyIncome) },
-            reachedBalance = balance,
+            reachedAfterSignal = reachedAfterSignal,
+            totalSignals = days.dropLast(if (days.isEmpty()) 0 else 1).sumOf { it.signalCount } + reachedAfterSignal,
+            totalIncome = if (days.isEmpty()) BigDecimal.ZERO else days.dropLast(1).fold(BigDecimal.ZERO) { acc, day -> acc.add(day.dailyIncome) }.add(days.last().incomePerSignal.multiply(reachedAfterSignal.toBigDecimal())),
+            reachedBalance = if (days.isEmpty()) balance else input.targetBalance.subtract(input.targetBalance.subtract(days.last().balanceAfter.subtract(days.last().dailyIncome)).remainder(days.last().incomePerSignal)).let { candidate -> if (candidate < input.targetBalance) candidate.add(days.last().incomePerSignal) else candidate },
             finalLevel = level,
             currentDeposit = deposit,
             grossProfit = gross,
