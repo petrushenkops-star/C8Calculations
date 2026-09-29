@@ -28,7 +28,7 @@ fun ProfitScreen(onBack: () -> Unit) {
     var endDate by remember { mutableStateOf(LocalDate.now().plusDays(30).toString()) }
     var x by remember { mutableStateOf("0") }
     var vip by remember { mutableStateOf(false) }
-    var l1 by remember { mutableStateOf("0") }
+    var l1AtLeast10 by remember { mutableStateOf(false) }
     var autoUpgrade by remember { mutableStateOf(true) }
     var targetBalance by remember { mutableStateOf("1000") }
     var targetMode by remember { mutableStateOf(false) }
@@ -39,7 +39,7 @@ fun ProfitScreen(onBack: () -> Unit) {
         try {
             val from = LocalDate.parse(startDate.trim())
             if (targetMode) {
-                val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, l1.toInt()))
+                val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
                 resultText = "Дата достижения: "+targetResult.reachedDate+"\nКалендарных дней: "+targetResult.daysCount+"\nСигналов: "+targetResult.totalSignals+"\nДоход за период: "+targetResult.totalIncome.stripTrailingZeros().toPlainString()+" USDT\nДостигнутый баланс: "+targetResult.reachedBalance.stripTrailingZeros().toPlainString()+" USDT\nИтоговый уровень: "+targetResult.finalLevel+"\nДепозит уровня: "+targetResult.currentDeposit.stripTrailingZeros().toPlainString()+" USDT\nПрибыль до удержания: "+targetResult.grossProfit.stripTrailingZeros().toPlainString()+" USDT\n30%: "+targetResult.withholding.stripTrailingZeros().toPlainString()+" USDT\nЧистая прибыль 70%: "+targetResult.netProfit.stripTrailingZeros().toPlainString()+" USDT"
                 errorText = null
                 return
@@ -56,7 +56,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                     autoUpgradeEnabled = autoUpgrade,
                     x = x.toInt(),
                     isVip = vip,
-                    l1Count = l1.toInt(),
+                    l1Count = if (l1AtLeast10) 10 else 0,
                 )
             )
             resultText = buildString {
@@ -130,8 +130,11 @@ fun ProfitScreen(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            NumberField("X — дополнительные сигналы", x) { x = it }
-            NumberField("Количество L1", l1) { l1 = it }
+            NumberField("Кол-во лидерских сигналов", x) { x = it }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Кол-во участников на L1 ≥ 10")
+                Checkbox(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
+            }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("VIP")
