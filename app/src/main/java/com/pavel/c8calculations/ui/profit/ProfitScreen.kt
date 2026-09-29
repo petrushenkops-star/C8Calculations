@@ -43,7 +43,7 @@ fun ProfitScreen(onBack: () -> Unit) {
     var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
     var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
     var targetMode by remember { mutableStateOf(preferences.getBoolean("targetMode", false)) }
-    var resultText by remember { mutableStateOf<String?>(null) }
+    var dateResultText by remember { mutableStateOf<String?>(null) }\n    var targetResultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetMode) {
@@ -74,7 +74,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                     appendLine("Итоговый уровень: ${targetResult.finalLevel}")
                     appendLine("Депозит уровня: ${targetResult.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
                     appendLine("Прибыль до удержания: ${targetResult.grossProfit.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("30%: ${targetResult.withholding.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("Комиссия 30%: ${targetResult.withholding.stripTrailingZeros().toPlainString()} USDT")
                     append("Чистая прибыль 70%: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
                 }
                 errorText = null
@@ -101,18 +101,18 @@ fun ProfitScreen(onBack: () -> Unit) {
                 appendLine("Ожидаемый баланс: ${result.expectedBalance.stripTrailingZeros().toPlainString()} USDT")
                 appendLine("Депозит уровня: ${result.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
                 appendLine("Прибыль до удержания: ${result.grossProfit.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("30%: ${result.withholding.stripTrailingZeros().toPlainString()} USDT")
+                appendLine("Комиссия 30%: ${result.withholding.stripTrailingZeros().toPlainString()} USDT")
                 append("Чистая прибыль 70%: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
             }
             errorText = null
         } catch (_: DateTimeParseException) {
-            resultText = null
+            if (targetMode) targetResultText = null else dateResultText = null
             errorText = "Дата должна быть в формате ГГГГ-ММ-ДД"
         } catch (_: NumberFormatException) {
-            resultText = null
+            if (targetMode) targetResultText = null else dateResultText = null
             errorText = "Проверьте числовые поля"
         } catch (e: IllegalArgumentException) {
-            resultText = null
+            if (targetMode) targetResultText = null else dateResultText = null
             errorText = e.message ?: "Проверьте введённые данные"
         }
     }
@@ -131,8 +131,8 @@ fun ProfitScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = !targetMode, onClick = { targetMode = false }, label = { Text("До даты") })
-                FilterChip(selected = targetMode, onClick = { targetMode = true }, label = { Text("До баланса") })
+                FilterChip(selected = !targetMode, onClick = { targetMode = false; errorText = null }, label = { Text("До даты") })
+                FilterChip(selected = targetMode, onClick = { targetMode = true; errorText = null }, label = { Text("До баланса") })
             }
             Text(if (targetMode) "Расчёт до баланса" else "Расчёт до даты", style = MaterialTheme.typography.titleLarge)
 
@@ -184,7 +184,7 @@ fun ProfitScreen(onBack: () -> Unit) {
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) { Text("Рассчитать") }
 
             errorText?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            resultText?.let {
+            (if (targetMode) targetResultText else dateResultText)?.let {
                 Card(Modifier.fillMaxWidth()) {
                     Text(it, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyLarge)
                 }
