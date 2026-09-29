@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -23,18 +24,40 @@ import java.time.temporal.ChronoUnit
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfitScreen(onBack: () -> Unit) {
-    var level by remember { mutableStateOf(ParticipantLevel.C1) }
-    var balance by remember { mutableStateOf("300") }
+    val context = LocalContext.current
+    val preferences = remember {
+        context.getSharedPreferences("profit_screen_settings", android.content.Context.MODE_PRIVATE)
+    }
+    var level by remember {
+        mutableStateOf(
+            runCatching { ParticipantLevel.valueOf(preferences.getString("level", ParticipantLevel.C1.name)!!) }
+                .getOrDefault(ParticipantLevel.C1)
+        )
+    }
+    var balance by remember { mutableStateOf(preferences.getString("balance", "300") ?: "300") }
     var startDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var endDate by remember { mutableStateOf(LocalDate.now().plusDays(30).toString()) }
-    var x by remember { mutableStateOf("0") }
-    var vip by remember { mutableStateOf(false) }
-    var l1AtLeast10 by remember { mutableStateOf(false) }
-    var autoUpgrade by remember { mutableStateOf(true) }
-    var targetBalance by remember { mutableStateOf("1000") }
-    var targetMode by remember { mutableStateOf(false) }
+    var x by remember { mutableStateOf(preferences.getString("leaderSignals", "0") ?: "0") }
+    var vip by remember { mutableStateOf(preferences.getBoolean("vip", false)) }
+    var l1AtLeast10 by remember { mutableStateOf(preferences.getBoolean("l1AtLeast10", false)) }
+    var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
+    var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
+    var targetMode by remember { mutableStateOf(preferences.getBoolean("targetMode", false)) }
     var resultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetMode) {
+        preferences.edit()
+            .putString("level", level.name)
+            .putString("balance", balance)
+            .putString("leaderSignals", x)
+            .putBoolean("vip", vip)
+            .putBoolean("l1AtLeast10", l1AtLeast10)
+            .putBoolean("autoUpgrade", autoUpgrade)
+            .putString("targetBalance", targetBalance)
+            .putBoolean("targetMode", targetMode)
+            .apply()
+    }
 
     fun calculate() {
         try {
