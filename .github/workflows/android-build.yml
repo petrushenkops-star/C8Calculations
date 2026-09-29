@@ -52,6 +52,13 @@ jobs:
           test -n "$C8_KEYSTORE_BASE64"
           printf '%s' "$C8_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/c8-release.jks"
           test -s "$RUNNER_TEMP/c8-release.jks"
+          echo "ae09c0e0ded36d869e4fbd4b0cfb4f4459e990c2a2503e338a65aa024a654574  $RUNNER_TEMP/c8-release.jks" | sha256sum -c -
+      - name: Validate signing key
+        env:
+          C8_KEYSTORE_PASSWORD: ${{ secrets.C8_KEYSTORE_PASSWORD }}
+          C8_KEY_ALIAS: ${{ secrets.C8_KEY_ALIAS }}
+        run: |
+          keytool -list -keystore "$RUNNER_TEMP/c8-release.jks" -storepass "$C8_KEYSTORE_PASSWORD" -alias "$C8_KEY_ALIAS"
       - name: Build signed release APK
         env:
           C8_KEYSTORE_PATH: ${{ runner.temp }}/c8-release.jks
