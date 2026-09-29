@@ -23,5 +23,6 @@ dependencies {
     implementation(composeBom)
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.navigation:navigation-compose:2.10.2")\n    testImplementation("junit:junit:4.13.2")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
+    testImplementation("junit:junit:4.13.2")
 }
