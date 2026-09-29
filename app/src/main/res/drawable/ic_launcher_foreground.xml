@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- Artwork stays inside the adaptive-icon safe zone so launchers do not crop it. -->
-    <path android:fillColor="#00000000" android:strokeColor="#FFD15A" android:strokeWidth="3.0" android:strokeLineJoin="round" android:pathData="M29,24 L49,24 L41,63 L72,63 Q64,78 49,78 L24,78 Z"/>
-    <path android:fillColor="#FFD15A" android:pathData="M59,30 Q59,27 62,27 L82,27 Q85,27 85,30 L85,59 Q85,62 82,62 L62,62 Q59,62 59,59 Z"/>
-    <path android:fillColor="#2B006B" android:pathData="M64,32 L80,32 L80,39 L64,39 Z"/>
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- C8 Club emblem with calculator; artwork kept inside adaptive-icon safe zone. -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFD15A" android:strokeWidth="2.8" android:strokeLineJoin="round"
+        android:pathData="M28,24 L50,24 L42,62 L72,62 Q65,77 50,79 L24,79 Z"/>
+    <!-- calculator -->
+    <path android:fillColor="#FFD15A" android:pathData="M59,29 Q59,26 62,26 L83,26 Q86,26 86,29 L86,60 Q86,63 83,63 L62,63 Q59,63 59,60 Z"/>
+    <path android:fillColor="#2B006B" android:pathData="M64,31 L81,31 L81,39 L64,39 Z"/>
     <path android:fillColor="#2B006B" android:pathData="M64,43 L69,43 L69,48 L64,48 Z M72,43 L77,43 L77,48 L72,48 Z M80,43 L83,43 L83,48 L80,48 Z M64,51 L69,51 L69,56 L64,56 Z M72,51 L77,51 L77,56 L72,56 Z"/>
     <path android:fillColor="#2B006B" android:pathData="M79,50 L82,50 L82,53 L85,53 L85,56 L82,56 L82,59 L79,59 L79,56 L76,56 L76,53 L79,53 Z"/>
+    <!-- C8 medallion -->
     <path android:fillColor="#FFD15A" android:pathData="M31,68 A9,9 0,1 0,31 86 A9,9 0,1 0,31 68"/>
-    <path android:fillColor="#2B006B" android:pathData="M31,72 A5,5 0,1 0,31 82 A5,5 0,1 0,31 72"/>
+    <path android:fillColor="#2B006B" android:pathData="M31,71 A6,6 0,1 0,31 83 A6,6 0,1 0,31 71"/>
+    <path android:fillColor="#FFD15A" android:pathData="M29,73 Q31,71 33,73 Q34,75 32,77 Q35,79 33,81 Q31,83 29,81 Q27,79 30,77 Q27,75 29,73"/>
+    <!-- CLUB mark -->
+    <path android:fillColor="#FFD15A" android:pathData="M43,83 L67,83 L67,86 L43,86 Z"/>
 </vector>
