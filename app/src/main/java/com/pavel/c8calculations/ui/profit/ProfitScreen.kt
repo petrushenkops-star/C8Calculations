@@ -10,8 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
+import com.pavel.c8calculations.calculation.TargetBalanceCalculator
 import com.pavel.c8calculations.model.ParticipantLevel
 import com.pavel.c8calculations.model.ProfitSimulationInput
+import com.pavel.c8calculations.model.TargetBalanceInput
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -28,12 +30,20 @@ fun ProfitScreen(onBack: () -> Unit) {
     var vip by remember { mutableStateOf(false) }
     var l1 by remember { mutableStateOf("0") }
     var autoUpgrade by remember { mutableStateOf(true) }
+    var targetBalance by remember { mutableStateOf("1000") }
+    var targetMode by remember { mutableStateOf(false) }
     var resultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     fun calculate() {
         try {
             val from = LocalDate.parse(startDate.trim())
+            if (targetMode) {
+                val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, l1.toInt()))
+                resultText = "Дата достижения: "+targetResult.reachedDate+"\nКалендарных дней: "+targetResult.daysCount+"\nСигналов: "+targetResult.totalSignals+"\nДоход за период: "+targetResult.totalIncome.stripTrailingZeros().toPlainString()+" USDT\nДостигнутый баланс: "+targetResult.reachedBalance.stripTrailingZeros().toPlainString()+" USDT\nИтоговый уровень: "+targetResult.finalLevel+"\nДепозит уровня: "+targetResult.currentDeposit.stripTrailingZeros().toPlainString()+" USDT\nПрибыль до удержания: "+targetResult.grossProfit.stripTrailingZeros().toPlainString()+" USDT\n30%: "+targetResult.withholding.stripTrailingZeros().toPlainString()+" USDT\nЧистая прибыль 70%: "+targetResult.netProfit.stripTrailingZeros().toPlainString()+" USDT"
+                errorText = null
+                return
+            }
             val to = LocalDate.parse(endDate.trim())
             require(!to.isBefore(from)) { "Дата окончания не может быть раньше даты начала" }
             val days = ChronoUnit.DAYS.between(from, to).toInt() + 1
@@ -84,7 +94,11 @@ fun ProfitScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Расчёт до даты", style = MaterialTheme.typography.titleLarge)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !targetMode, onClick = { targetMode = false }, label = { Text("До даты") })
+                FilterChip(selected = targetMode, onClick = { targetMode = true }, label = { Text("До баланса") })
+            }
+            Text(if (targetMode) "Расчёт до баланса" else "Расчёт до даты", style = MaterialTheme.typography.titleLarge)
 
             Text("Текущий уровень")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -107,11 +121,15 @@ fun ProfitScreen(onBack: () -> Unit) {
                 label = { Text("Дата начала (ГГГГ-ММ-ДД)") }, singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            TextField(
-                value = endDate, onValueChange = { endDate = it },
-                label = { Text("Дата окончания (ГГГГ-ММ-ДД)") }, singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (targetMode) {
+                NumberField("Целевой баланс, USDT", targetBalance) { targetBalance = it }
+            } else {
+                TextField(
+                    value = endDate, onValueChange = { endDate = it },
+                    label = { Text("Дата окончания (ГГГГ-ММ-ДД)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             NumberField("X — дополнительные сигналы", x) { x = it }
             NumberField("Количество L1", l1) { l1 = it }
 
@@ -133,8 +151,10 @@ fun ProfitScreen(onBack: () -> Unit) {
                 }
             }
 
-            HorizontalDivider()
-            Text("Расчёт «До баланса» будет подключён отдельным этапом.")
+            if (targetMode) {
+                HorizontalDivider()
+                Text("Расчёт останавливается в первый календарный день, когда баланс достигает или превышает цель.")
+            }
         }
     }
 }
