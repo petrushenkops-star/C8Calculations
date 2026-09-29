@@ -17,6 +17,7 @@ data class TargetBalanceInput(
 data class TargetBalanceResult(
     val reachedDate: LocalDate,
     val daysCount: Int,
+    val reachedAfterSignal: Int,
     val totalSignals: Int,
     val totalIncome: BigDecimal,
     val reachedBalance: BigDecimal,
