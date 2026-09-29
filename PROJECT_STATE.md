@@ -70,3 +70,5 @@ PHASE 6 — Profit screen «До баланса» and target-balance calculation
 PHASE 7 — improve Profit screen UX and add day-by-day calculation details.
 
 - Update mechanism: versionCode increments for install-over-existing updates; release APK uses the permanent signing key.
+
+- Permanent signing key validated: PKCS12 keystore uses the store password for the private key entry.
