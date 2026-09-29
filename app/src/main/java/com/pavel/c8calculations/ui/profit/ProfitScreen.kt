@@ -41,17 +41,19 @@ fun ProfitScreen(onBack: () -> Unit) {
             val from = LocalDate.parse(startDate.trim())
             if (targetMode) {
                 val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
-                resultText = "Дата достижения: "+targetResult.reachedDate+"
-После сигнала: "+targetResult.reachedAfterSignal+"
-Календарных дней: "+targetResult.daysCount+"
-Сигналов: "+targetResult.totalSignals+"
-Доход за период: "+targetResult.totalIncome.stripTrailingZeros().toPlainString()+" USDT
-Достигнутый баланс: "+targetResult.reachedBalance.stripTrailingZeros().toPlainString()+" USDT
-Итоговый уровень: "+targetResult.finalLevel+"
-Депозит уровня: "+targetResult.currentDeposit.stripTrailingZeros().toPlainString()+" USDT
-Прибыль до удержания: "+targetResult.grossProfit.stripTrailingZeros().toPlainString()+" USDT
-30%: "+targetResult.withholding.stripTrailingZeros().toPlainString()+" USDT
-Чистая прибыль 70%: "+targetResult.netProfit.stripTrailingZeros().toPlainString()+" USDT"
+                resultText = buildString {
+                    appendLine("Дата достижения: ${targetResult.reachedDate}")
+                    appendLine("После сигнала: ${targetResult.reachedAfterSignal}")
+                    appendLine("Календарных дней: ${targetResult.daysCount}")
+                    appendLine("Сигналов: ${targetResult.totalSignals}")
+                    appendLine("Доход за период: ${targetResult.totalIncome.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("Достигнутый баланс: ${targetResult.reachedBalance.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("Итоговый уровень: ${targetResult.finalLevel}")
+                    appendLine("Депозит уровня: ${targetResult.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("Прибыль до удержания: ${targetResult.grossProfit.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("30%: ${targetResult.withholding.stripTrailingZeros().toPlainString()} USDT")
+                    append("Чистая прибыль 70%: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                }
                 errorText = null
                 return
             }
