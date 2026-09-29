@@ -22,7 +22,7 @@ android {
                 storeFile = file(keystorePath)
                 storePassword = System.getenv("C8_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("C8_KEY_ALIAS")
-                keyPassword = System.getenv("C8_KEY_PASSWORD")
+                keyPassword = System.getenv("C8_KEYSTORE_PASSWORD")
             }
         }
     }
