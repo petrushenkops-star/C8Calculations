@@ -5,7 +5,7 @@
 - Application ID: com.pavel.c8calculations
 - Version Name: 0.1.0
 - Version Code: 1
-- Current Phase: PHASE 3 COMPLETE
+- Current Phase: PHASE 4 COMPLETE
 
 ## Toolchain pinned
 - Android Gradle Plugin: 9.4.0
@@ -35,13 +35,18 @@
 - Full signal income is added in PHASE 3; no 30% withholding is applied.
 - Validation rejects negative X and L1 count.
 - Unit tests cover level configuration and PHASE 3 calculation rules.
+- PHASE 4 multi-day ProfitSimulationEngine and LevelUpgradeEngine.
+- Auto-upgrade is checked after each day and applies from the next calendar day.
+- Auto-upgrade selects the maximum level whose deposit threshold is reached; balance is not reduced.
+- Auto-upgrade can be disabled.
+- Gross profit = expected balance - deposit of the resulting level; 30% withholding is calculated separately and does not reduce simulation balance; net profit = gross profit × 70%.
 - CI runs unit tests before assembling APK.
 
 ## Not implemented by design
-Auto-level upgrades, multi-day forecasts, profit withholding, OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
+OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 
 ## Tested
-- GitHub Actions run 36549782970.
+- GitHub Actions run 36550773008.
 - :app:testDebugUnitTest: SUCCESS.
 - :app:assembleDebug: SUCCESS.
 - APK existence verification: SUCCESS.
@@ -49,11 +54,11 @@ Auto-level upgrades, multi-day forecasts, profit withholding, OCR, leader runtim
 - Artifact: C8Calculations-v0.1.0-debug.
 
 ## Known Problems
-- No known PHASE 3 build/test errors.
+- No known PHASE 4 build/test errors.
 - Current build remains debug-signed; permanent release signing remains a separate setup task.
 
 ## Last Completed Task
-PHASE 3 — daily calculation engine and signal rules.
+PHASE 4 — multi-day profit forecast and automatic level-upgrade logic.
 
 ## Next Task
-PHASE 4 — multi-day profit forecast and level-upgrade logic, after confirming its exact approved rules.
+PHASE 5 — connect calculation core to the Profit screen UI.
