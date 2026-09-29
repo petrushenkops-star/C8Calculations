@@ -80,7 +80,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                     appendLine("Депозит уровня: ${targetResult.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
                     appendLine("Прибыль до удержания: ${targetResult.grossProfit.stripTrailingZeros().toPlainString()} USDT")
                     appendLine("Комиссия 30%: ${targetResult.withholding.stripTrailingZeros().toPlainString()} USDT")
-                    appendLine("Чистая прибыль 70%: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                    appendLine("Чистая прибыль: ${targetResult.netProfit.stripTrailingZeros().toPlainString()} USDT")
                     append("Чистая прибыль, ₽: ${targetResult.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
                 }
                 errorText = null
@@ -108,7 +108,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                 appendLine("Депозит уровня: ${result.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
                 appendLine("Прибыль до удержания: ${result.grossProfit.stripTrailingZeros().toPlainString()} USDT")
                 appendLine("Комиссия 30%: ${result.withholding.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Чистая прибыль 70%: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
+                appendLine("Чистая прибыль: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
                 append("Чистая прибыль, ₽: ${result.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
             }
             errorText = null
