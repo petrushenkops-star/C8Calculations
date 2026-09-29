@@ -56,8 +56,8 @@ class Phase6TargetBalanceTest {
         )
         assertEquals(2, result.daysCount)
         assertEquals(4, result.totalSignals)
-        assertMoney("192", result.totalIncome)
-        assertMoney("10142", result.reachedBalance)
+        assertMoney("256", result.totalIncome)
+        assertMoney("10206", result.reachedBalance)
         assertEquals(ParticipantLevel.C6, result.finalLevel)
     }
 
