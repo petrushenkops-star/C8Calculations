@@ -5,7 +5,7 @@
 - Application ID: com.pavel.c8calculations
 - Version Name: 0.1.0
 - Version Code: 1
-- Current Phase: PHASE 2 COMPLETE
+- Current Phase: PHASE 3 COMPLETE
 
 ## Toolchain pinned
 - Android Gradle Plugin: 9.4.0
@@ -22,31 +22,38 @@
 
 ## Implemented
 - PHASE 1 UI shell, Material 3 theme and navigation.
-- ParticipantLevel enum: C1, C2, C3, C4, C5, C6.
-- LevelConfig model using BigDecimal for monetary values.
-- Central LevelConfiguration as the single source for level deposit, income per signal and base signal count.
+- PHASE 2 ParticipantLevel C1-C6 and centralized LevelConfiguration.
+- Monetary calculations use BigDecimal.
 - Approved deposits: 300 / 700 / 1500 / 3000 / 6000 / 10000 USDT.
 - Approved income per signal: 2.4 / 5.6 / 12 / 24 / 48 / 80 USDT.
-- Base signal counts by level: 2 / 2 / 3 / 3 / 4 / 4.
-- Unit tests for the centralized level configuration.
+- Base signal counts: 2 / 2 / 3 / 3 / 4 / 4.
+- PHASE 3 SignalRuleEngine.
+- Monday-Thursday and Sunday: base signals + X + VIP bonus.
+- Friday-Saturday: 1 + Z; Z=1 when L1 count >= 10.
+- DailyCalculationInput and DailyCalculationResult.
+- DailyCalculationEngine calculates signal count, daily income and balance after the day.
+- Full signal income is added in PHASE 3; no 30% withholding is applied.
+- Validation rejects negative X and L1 count.
+- Unit tests cover level configuration and PHASE 3 calculation rules.
 - CI runs unit tests before assembling APK.
 
 ## Not implemented by design
-SignalRuleEngine, daily income calculation, weekday rules, X/Y/Z, VIP/L1 logic, auto-level upgrades, forecasts, profit withholding, OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
+Auto-level upgrades, multi-day forecasts, profit withholding, OCR, leader runtime analysis, dividends, DataStore, Room, ML Kit and CameraX.
 
 ## Tested
-- GitHub Actions run 36547850354.
+- GitHub Actions run 36549782970.
 - :app:testDebugUnitTest: SUCCESS.
 - :app:assembleDebug: SUCCESS.
 - APK existence verification: SUCCESS.
 - Artifact upload: SUCCESS.
+- Artifact: C8Calculations-v0.1.0-debug.
 
 ## Known Problems
-- No known PHASE 2 build/test errors.
+- No known PHASE 3 build/test errors.
 - Current build remains debug-signed; permanent release signing remains a separate setup task.
 
 ## Last Completed Task
-PHASE 2 — data models and centralized level configuration.
+PHASE 3 — daily calculation engine and signal rules.
 
 ## Next Task
-PHASE 3 — daily calculation engine and signal rules.
+PHASE 4 — multi-day profit forecast and level-upgrade logic, after confirming its exact approved rules.
