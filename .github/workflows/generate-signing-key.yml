@@ -1,0 +1,31 @@
+name: Generate C8 Signing Key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate signing key
+        run: |
+          keytool -genkeypair \
+            -keystore c8-release.jks \
+            -storepass C8Store2026Secure \
+            -keypass C8Key2026Secure \
+            -alias c8-release \
+            -keyalg RSA \
+            -keysize 4096 \
+            -validity 10000 \
+            -dname "CN=C8 Calculations, OU=Android, O=C8"
+
+      - name: Upload signing key
+        uses: actions/upload-artifact@v4
+        with:
+          name: C8-SIGNING-KEY-BACKUP
+          path: c8-release.jks
+          retention-days: 1
