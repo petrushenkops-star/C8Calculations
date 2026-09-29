@@ -43,7 +43,8 @@ fun ProfitScreen(onBack: () -> Unit) {
     var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
     var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
     var targetMode by remember { mutableStateOf(preferences.getBoolean("targetMode", false)) }
-    var dateResultText by remember { mutableStateOf<String?>(null) }\n    var targetResultText by remember { mutableStateOf<String?>(null) }
+    var dateResultText by remember { mutableStateOf<String?>(null) }
+    var targetResultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetMode) {
@@ -64,7 +65,7 @@ fun ProfitScreen(onBack: () -> Unit) {
             val from = LocalDate.parse(startDate.trim())
             if (targetMode) {
                 val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
-                resultText = buildString {
+                targetResultText = buildString {
                     appendLine("Дата достижения: ${targetResult.reachedDate}")
                     appendLine("После сигнала: ${targetResult.reachedAfterSignal}")
                     appendLine("Календарных дней: ${targetResult.daysCount}")
@@ -95,7 +96,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                     l1Count = if (l1AtLeast10) 10 else 0,
                 )
             )
-            resultText = buildString {
+            dateResultText = buildString {
                 appendLine("Дней: $days")
                 appendLine("Итоговый уровень: ${result.finalLevel}")
                 appendLine("Ожидаемый баланс: ${result.expectedBalance.stripTrailingZeros().toPlainString()} USDT")
