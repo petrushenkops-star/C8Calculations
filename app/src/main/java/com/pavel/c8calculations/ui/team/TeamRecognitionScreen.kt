@@ -83,6 +83,12 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Text("Состав команды", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Загрузите изображение структуры или скорректируйте результат вручную.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Button(
                 onClick = { imagePicker.launch("image/*") },
                 modifier = Modifier.fillMaxWidth(),
@@ -106,7 +112,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 
             if (selectedBitmap != null || counts.any { (it.toIntOrNull() ?: 0) > 0 }) {
                 HorizontalDivider()
-                Text("Результат распознавания", style = MaterialTheme.typography.titleLarge)
+                Text("Результат распознавания", style = MaterialTheme.typography.titleMedium)
                 Text("При необходимости количество участников можно исправить вручную.")
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
