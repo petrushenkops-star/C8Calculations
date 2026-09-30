@@ -11,7 +11,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
 import com.pavel.c8calculations.calculation.TargetBalanceCalculator
@@ -250,22 +249,25 @@ fun ProfitScreen(onBack: () -> Unit) {
 
 @Composable
 private fun ModeChip(selected: Boolean, text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected,
+    val colors = if (selected) {
+        ButtonDefaults.filledTonalButtonColors()
+    } else {
+        ButtonDefaults.outlinedButtonColors()
+    }
+    OutlinedButton(
         onClick = onClick,
-        label = {
-            Text(
-                text = text,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                fontSize = 13.sp
-            )
-        },
         modifier = modifier.height(52.dp),
-        leadingIcon = null,
-        trailingIcon = null
-    )
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+        colors = colors
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
 }
 
 private fun formatTargetResult(
