@@ -151,11 +151,11 @@ fun ProfitScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = calculationMode == "DATE", onClick = { calculationMode = "DATE"; dateResultText = null; errorText = null }, label = { Text("До даты") })
-                FilterChip(selected = calculationMode == "BALANCE", onClick = { calculationMode = "BALANCE"; targetResultText = null; errorText = null }, label = { Text("До баланса") })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = calculationMode == "DATE", onClick = { calculationMode = "DATE"; dateResultText = null; errorText = null }, label = { Text("До даты") }, modifier = Modifier.weight(1f))
+                FilterChip(selected = calculationMode == "BALANCE", onClick = { calculationMode = "BALANCE"; targetResultText = null; errorText = null }, label = { Text("До баланса") }, modifier = Modifier.weight(1f))
+                FilterChip(selected = calculationMode == "NET_PROFIT", onClick = { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }, label = { Text("До прибыли") }, modifier = Modifier.weight(1f))
             }
-            FilterChip(selected = calculationMode == "NET_PROFIT", onClick = { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }, label = { Text("До чистой прибыли") })
             Text(when (calculationMode) { "BALANCE" -> "Расчёт до баланса"; "NET_PROFIT" -> "Расчёт до чистой прибыли"; else -> "Расчёт до даты" }, style = MaterialTheme.typography.titleLarge)
 
             Text("Текущий уровень")
@@ -209,17 +209,17 @@ fun ProfitScreen(onBack: () -> Unit) {
             NumberField("Кол-во лидерских сигналов", x) { x = it }
             NumberField("Курс USDT, ₽", usdtRubRate) { usdtRubRate = it }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Кол-во участников на L1 ≥ 10")
-                Checkbox(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
+                Text("L1 ≥ 10")
+                Switch(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("VIP")
-                Checkbox(checked = vip, onCheckedChange = { vip = it })
+                Switch(checked = vip, onCheckedChange = { vip = it })
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Автопереход между уровнями")
-                Checkbox(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
+                Text("Автопереход уровней")
+                Switch(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
             }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) { Text("Рассчитать") }
