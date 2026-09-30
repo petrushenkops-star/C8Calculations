@@ -23,20 +23,19 @@ fun DividendScreen(onBack: () -> Unit) {
         context.getSharedPreferences("team_structure", android.content.Context.MODE_PRIVATE)
     }
     var days by remember { mutableStateOf("10") }
-    val c1 = preferences.getInt("c1", 0)
     val c2 = preferences.getInt("c2", 0)
     val c3 = preferences.getInt("c3", 0)
     val c4 = preferences.getInt("c4", 0)
     val c5 = preferences.getInt("c5", 0)
     val c6 = preferences.getInt("c6", 0)
-    val totalParticipants = c1 + c2 + c3 + c4 + c5 + c6
+    val totalParticipants = c2 + c3 + c4 + c5 + c6
     var result by remember { mutableStateOf<DividendResult?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     fun calculate() {
         try {
             result = DividendCalculator.calculate(
-                DividendInput(days.toInt(), c1, c2, c3, c4, c5, c6)
+                DividendInput(days.toInt(), 0, c2, c3, c4, c5, c6)
             )
             errorText = null
         } catch (_: NumberFormatException) {
@@ -66,8 +65,8 @@ fun DividendScreen(onBack: () -> Unit) {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Структура команды", style = MaterialTheme.typography.titleMedium)
-                    Text("C1 — $c1   C2 — $c2   C3 — $c3")
-                    Text("C4 — $c4   C5 — $c5   C6 — $c6")
+                    Text("C2 — $c2   C3 — $c3   C4 — $c4")
+                    Text("C5 — $c5   C6 — $c6")
                     Text("Всего участников: $totalParticipants")
                 }
             }
@@ -81,7 +80,7 @@ fun DividendScreen(onBack: () -> Unit) {
                 "Для изменения состава команды используйте раздел «Структура команды».",
                 style = MaterialTheme.typography.bodySmall
             )
-            Text("C1 учитывается в структуре команды, но не входит в формулу дивидендов.", style = MaterialTheme.typography.bodySmall)
+            Text("C1 не учитываются в составе команды.", style = MaterialTheme.typography.bodySmall)
 
             IntegerField("Количество дней", days) { days = it }
 
