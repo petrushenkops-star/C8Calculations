@@ -6,16 +6,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import android.provider.MediaStore
-import android.net.Uri
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import com.pavel.c8calculations.recognition.TeamLevelRecognizer
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.DividendCalculator
@@ -26,61 +18,29 @@ import java.math.BigDecimal
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DividendScreen(onBack: () -> Unit) {
-    var days by remember { mutableStateOf("10") }
-    var c1 by remember { mutableStateOf("0") }
-    var c2 by remember { mutableStateOf("0") }
-    var c3 by remember { mutableStateOf("0") }
-    var c4 by remember { mutableStateOf("0") }
-    var c5 by remember { mutableStateOf("0") }
-    var c6 by remember { mutableStateOf("0") }
-    var result by remember { mutableStateOf<DividendResult?>(null) }
-    var recognitionStatus by remember { mutableStateOf<String?>(null) }
-    var selectedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     val context = LocalContext.current
-    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            recognitionStatus = "Распознаю структуру…"
-            try {
-                @Suppress("DEPRECATION")
-                val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                selectedBitmap = bitmap
-                TeamLevelRecognizer.recognize(bitmap) { recognized ->
-                    if (recognized == null) {
-                        recognitionStatus = "Уровни C1–C6 не найдены. Введите количества вручную."
-                    } else {
-                        c1 = recognized.counts[1].toString(); c2 = recognized.counts[2].toString()
-                        c3 = recognized.counts[3].toString(); c4 = recognized.counts[4].toString()
-                        c5 = recognized.counts[5].toString(); c6 = recognized.counts[6].toString()
-                        result = null
-                        recognitionStatus = if (recognized.leaderExcluded)
-                            "Структура распознана. Лидер в единственном левом блоке исключён. Проверьте количества."
-                        else "Структура распознана. Лидер не определён: в левом столбце несколько блоков. Проверьте количества."
-                    }
-                }
-            } catch (_: Exception) {
-                recognitionStatus = "Не удалось открыть изображение. Попробуйте другое."
-            }
-        }
+    val preferences = remember {
+        context.getSharedPreferences("team_structure", android.content.Context.MODE_PRIVATE)
     }
+    var days by remember { mutableStateOf("10") }
+    val c2 = preferences.getInt("c2", 0)
+    val c3 = preferences.getInt("c3", 0)
+    val c4 = preferences.getInt("c4", 0)
+    val c5 = preferences.getInt("c5", 0)
+    val c6 = preferences.getInt("c6", 0)
+    val totalParticipants = c2 + c3 + c4 + c5 + c6
+    var result by remember { mutableStateOf<DividendResult?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     fun calculate() {
         try {
             result = DividendCalculator.calculate(
-                DividendInput(
-                    days = days.toInt(),
-                    c1 = c1.toInt(),
-                    c2 = c2.toInt(),
-                    c3 = c3.toInt(),
-                    c4 = c4.toInt(),
-                    c5 = c5.toInt(),
-                    c6 = c6.toInt(),
-                )
+                DividendInput(days.toInt(), 0, c2, c3, c4, c5, c6)
             )
             errorText = null
         } catch (_: NumberFormatException) {
             result = null
-            errorText = "Проверьте количество дней и участников"
+            errorText = "Проверьте количество дней"
         } catch (e: IllegalArgumentException) {
             result = null
             errorText = e.message ?: "Проверьте введённые данные"
@@ -101,32 +61,25 @@ fun DividendScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text("Расчёт дивидендов", style = MaterialTheme.typography.titleLarge)
-            OutlinedButton(onClick = { imagePicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
-                Text("Распознать структуру по изображению")
-            }
-            selectedBitmap?.let { bitmap ->
-                Card(Modifier.fillMaxWidth()) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Загруженная структура команды",
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp).padding(8.dp),
-                        contentScale = ContentScale.Fit
-                    )
+
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Структура команды", style = MaterialTheme.typography.titleMedium)
+                    Text("C2 — $c2   C3 — $c3   C4 — $c4")
+                    Text("C5 — $c5   C6 — $c6")
+                    Text("Всего участников: $totalParticipants")
                 }
             }
-            recognitionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            Text("После распознавания все количества C1–C6 можно изменить вручную.", style = MaterialTheme.typography.bodySmall)
-            HorizontalDivider()
-            Text("Результат распознавания", style = MaterialTheme.typography.titleMedium)
-            IntegerField("C1", c1) { c1 = it }
-            IntegerField("C2", c2) { c2 = it }
-            IntegerField("C3", c3) { c3 = it }
-            IntegerField("C4", c4) { c4 = it }
-            IntegerField("C5", c5) { c5 = it }
-            IntegerField("C6", c6) { c6 = it }
-
-            Text("C1 сохраняется для структуры команды, но в формулу дивидендов не входит.", style = MaterialTheme.typography.bodySmall)
-
+            if (totalParticipants == 0) {
+                Text(
+                    "Структура команды ещё не задана. Сначала загрузите её в разделе «Структура команды».",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            Text(
+                "Для изменения состава команды используйте раздел «Структура команды».",
+                style = MaterialTheme.typography.bodySmall
+            )
             IntegerField("Количество дней", days) { days = it }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) {
