@@ -8,6 +8,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -30,6 +32,8 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun ProfitScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val preferences = remember {
         context.getSharedPreferences("profit_screen_settings", android.content.Context.MODE_PRIVATE)
     }
@@ -77,6 +81,8 @@ fun ProfitScreen(onBack: () -> Unit) {
     }
 
     fun calculate() {
+        keyboardController?.hide()
+        focusManager.clearFocus()
         showDetails = false
         detailDays = emptyList()
         try {
