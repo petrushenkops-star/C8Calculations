@@ -48,7 +48,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         if (result == null) {
                             statusText = "Не удалось распознать уровни C1–C6"
                         } else {
-                            counts = (1..6).map { result.counts[it].toString() }
+                            counts = (1..6).map { if (it == 1) "0" else result.counts[it].toString() }
                             leaderExcluded = result.leaderExcluded
                             statusText = "Распознавание завершено"
                         }
@@ -63,12 +63,12 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 
     LaunchedEffect(counts, leaderExcluded) {
         val editor = preferences.edit()
-        counts.forEachIndexed { index, value -> editor.putInt("c${index + 1}", value.toIntOrNull()?.coerceAtLeast(0) ?: 0) }
+        counts.forEachIndexed { index, value -> editor.putInt("c${index + 1}", if (index == 0) 0 else value.toIntOrNull()?.coerceAtLeast(0) ?: 0) }
         leaderExcluded?.let { editor.putBoolean("leaderExcluded", it) }
         editor.apply()
     }
 
-    val totalParticipants = counts.sumOf { it.toIntOrNull()?.coerceAtLeast(0) ?: 0 }
+    val totalParticipants = counts.drop(1).sumOf { it.toIntOrNull()?.coerceAtLeast(0) ?: 0 }
 
     Scaffold(
         topBar = {
@@ -109,7 +109,9 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 Text("Результат распознавания", style = MaterialTheme.typography.titleLarge)
                 Text("При необходимости количество участников можно исправить вручную.")
 
-                (1..6).forEach { level ->
+                Text("C1 не учитываются в составе команды", style = MaterialTheme.typography.bodyMedium)
+
+                (2..6).forEach { level ->
                     TeamCountField(
                         label = "C$level",
                         value = counts[level - 1],
