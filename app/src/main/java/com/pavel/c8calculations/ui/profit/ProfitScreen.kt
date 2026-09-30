@@ -159,7 +159,12 @@ fun ProfitScreen(onBack: () -> Unit) {
                 ModeChip(calculationMode == "BALANCE", "До баланса", Modifier.weight(1f)) { calculationMode = "BALANCE"; targetResultText = null; errorText = null }
                 ModeChip(calculationMode == "NET_PROFIT", "До прибыли", Modifier.weight(1f)) { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }
             }
-            Text(when (calculationMode) { "BALANCE" -> "Расчёт до баланса"; "NET_PROFIT" -> "Расчёт до чистой прибыли"; else -> "Расчёт до даты" }, style = MaterialTheme.typography.titleLarge)
+            Text(when (calculationMode) { "BALANCE" -> "Расчёт до баланса"; "NET_PROFIT" -> "Расчёт до чистой прибыли"; else -> "Расчёт до даты" }, style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Исходные данные",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Text("Текущий уровень")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -211,6 +216,8 @@ fun ProfitScreen(onBack: () -> Unit) {
             }
             NumberField("Кол-во лидерских сигналов", x) { x = it }
             NumberField("Курс USDT, ₽", usdtRubRate) { usdtRubRate = it }
+            HorizontalDivider()
+            Text("Параметры", style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("L1 ≥ 10")
                 Switch(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
@@ -230,7 +237,10 @@ fun ProfitScreen(onBack: () -> Unit) {
             errorText?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             (when (calculationMode) { "BALANCE" -> targetResultText; "NET_PROFIT" -> netProfitResultText; else -> dateResultText })?.let {
                 Card(Modifier.fillMaxWidth()) {
-                    Text(it, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyLarge)
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Результат", style = MaterialTheme.typography.titleMedium)
+                        Text(it, style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
             }
             if (detailDays.isNotEmpty()) {
