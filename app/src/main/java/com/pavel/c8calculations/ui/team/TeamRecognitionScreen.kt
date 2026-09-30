@@ -141,7 +141,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text("$totalParticipants участников", style = MaterialTheme.typography.titleMedium)
-                        Text("C2 ${counts[1]}; C3 ${counts[2]}; C4 ${counts[3]}; C5 ${counts[4]}; C6 ${counts[5]}")
                         leaderExcluded?.let { excluded ->
                             Text(
                                 if (excluded) "Лидер обнаружен и исключён из подсчёта"
