@@ -6,6 +6,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.provider.MediaStore
+import com.pavel.c8calculations.recognition.TeamLevelRecognizer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -25,6 +30,32 @@ fun DividendScreen(onBack: () -> Unit) {
     var c5 by remember { mutableStateOf("0") }
     var c6 by remember { mutableStateOf("0") }
     var result by remember { mutableStateOf<DividendResult?>(null) }
+    var recognitionStatus by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            recognitionStatus = "Распознаю структуру…"
+            try {
+                @Suppress("DEPRECATION")
+                val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                TeamLevelRecognizer.recognize(bitmap) { recognized ->
+                    if (recognized == null) {
+                        recognitionStatus = "Уровни C1–C6 не найдены. Введите количества вручную."
+                    } else {
+                        c1 = recognized.counts[1].toString(); c2 = recognized.counts[2].toString()
+                        c3 = recognized.counts[3].toString(); c4 = recognized.counts[4].toString()
+                        c5 = recognized.counts[5].toString(); c6 = recognized.counts[6].toString()
+                        result = null
+                        recognitionStatus = if (recognized.leaderExcluded)
+                            "Структура распознана. Лидер в единственном левом блоке исключён. Проверьте количества."
+                        else "Структура распознана. Лидер не определён: в левом столбце несколько блоков. Проверьте количества."
+                    }
+                }
+            } catch (_: Exception) {
+                recognitionStatus = "Не удалось открыть изображение. Попробуйте другое."
+            }
+        }
+    }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     fun calculate() {
@@ -63,7 +94,12 @@ fun DividendScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Ручной расчёт", style = MaterialTheme.typography.titleLarge) // Dividend module 0.1.8
+            Text("Расчёт дивидендов", style = MaterialTheme.typography.titleLarge)
+            OutlinedButton(onClick = { imagePicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
+                Text("Распознать структуру по изображению")
+            }
+            recognitionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Text("После распознавания все количества C1–C6 можно изменить вручную.", style = MaterialTheme.typography.bodySmall)
             IntegerField("Количество дней", days) { days = it }
             HorizontalDivider()
             Text("Количество участников", style = MaterialTheme.typography.titleMedium)
