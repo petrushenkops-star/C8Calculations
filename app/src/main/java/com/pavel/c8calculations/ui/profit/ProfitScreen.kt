@@ -61,7 +61,9 @@ fun ProfitScreen(onBack: () -> Unit) {
     LaunchedEffect(level, balance, startDate, endDate, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, targetNetProfitCurrency, usdtRubRate, calculationMode) {
         preferences.edit()
             .putString("level", level.name)
-            .putString("balance", balance)\n            .putString("startDate", startDate)\n            .putString("endDate", endDate)
+            .putString("balance", balance)
+            .putString("startDate", startDate)
+            .putString("endDate", endDate)
             .putString("leaderSignals", x)
             .putBoolean("vip", vip)
             .putBoolean("l1AtLeast10", l1AtLeast10)
