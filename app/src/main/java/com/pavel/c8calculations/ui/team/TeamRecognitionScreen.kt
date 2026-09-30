@@ -109,8 +109,8 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 Text("Результат распознавания", style = MaterialTheme.typography.titleLarge)
                 Text("При необходимости количество участников можно исправить вручную.")
 
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (2..6).forEach { level ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (2..4).forEach { level ->
                         TeamCountField(
                             label = "C$level",
                             value = counts[level - 1],
@@ -120,6 +120,19 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                             modifier = Modifier.weight(1f)
                         )
                     }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (5..6).forEach { level ->
+                        TeamCountField(
+                            label = "C$level",
+                            value = counts[level - 1],
+                            onValueChange = { newValue ->
+                                counts = counts.toMutableList().also { it[level - 1] = newValue }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
                 }
 
                 Card(Modifier.fillMaxWidth()) {
@@ -155,6 +168,6 @@ private fun TeamCountField(label: String, value: String, onValueChange: (String)
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier
     )
 }
