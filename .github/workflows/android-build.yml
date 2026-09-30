@@ -1,4 +1,5 @@
 name: Android APK
+# CI validates pull requests before merging releases.
 
 on:
   workflow_dispatch:
