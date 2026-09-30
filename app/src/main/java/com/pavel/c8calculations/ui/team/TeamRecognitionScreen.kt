@@ -35,6 +35,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     }
     var recognizing by remember { mutableStateOf(false) }
     var diagnosticLines by remember { mutableStateOf<List<String>>(emptyList()) }
+    var rawOcrLines by remember { mutableStateOf<List<String>>(emptyList()) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -45,6 +46,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     statusText = "Распознавание..."
                     leaderExcluded = null
                     diagnosticLines = emptyList()
+                    rawOcrLines = emptyList()
                     TeamLevelRecognizer.recognize(bitmap) { result ->
                         recognizing = false
                         if (result == null) {
@@ -58,6 +60,9 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                                     "${index + 1}. C${card.level} • x=${card.x}, y=${card.y}" +
                                         if (card.excludedAsLeader) " • исключён как лидер" else ""
                                 }
+                            rawOcrLines = result.ocrLines.mapIndexed { index, line ->
+                                "${index + 1}. x=${line.x}, y=${line.y} • ${line.text}"
+                            }
                             statusText = "Распознавание завершено: найдено карточек — ${result.detectedCards}"
                         }
                     }
@@ -154,6 +159,19 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             diagnosticLines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
+                }
+
+                if (rawOcrLines.isNotEmpty()) {
+                    Text("Исходные строки OCR", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Найдите здесь строки пропущенных C4 и пришлите скриншот.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            rawOcrLines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }
