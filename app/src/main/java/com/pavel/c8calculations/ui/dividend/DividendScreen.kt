@@ -71,6 +71,12 @@ fun DividendScreen(onBack: () -> Unit) {
                     Text("Всего участников: $totalParticipants")
                 }
             }
+            if (totalParticipants == 0) {
+                Text(
+                    "Структура команды ещё не задана. Сначала загрузите её в разделе «Структура команды».",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Text(
                 "Для изменения состава команды используйте раздел «Структура команды».",
                 style = MaterialTheme.typography.bodySmall
