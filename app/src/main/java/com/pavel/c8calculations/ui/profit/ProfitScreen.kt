@@ -15,6 +15,7 @@ import com.pavel.c8calculations.calculation.ProfitSimulationEngine
 import com.pavel.c8calculations.calculation.TargetBalanceCalculator
 import com.pavel.c8calculations.calculation.TargetNetProfitCalculator
 import com.pavel.c8calculations.model.ParticipantLevel
+import com.pavel.c8calculations.model.ProfitSimulationDay
 import com.pavel.c8calculations.model.ProfitSimulationInput
 import com.pavel.c8calculations.model.TargetBalanceInput
 import com.pavel.c8calculations.model.TargetNetProfitInput
@@ -51,6 +52,8 @@ fun ProfitScreen(onBack: () -> Unit) {
     var targetResultText by remember { mutableStateOf<String?>(null) }
     var netProfitResultText by remember { mutableStateOf<String?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
+    var detailDays by remember { mutableStateOf<List<ProfitSimulationDay>>(emptyList()) }
+    var showDetails by remember { mutableStateOf(false) }
 
     LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, usdtRubRate, calculationMode) {
         preferences.edit()
@@ -68,6 +71,8 @@ fun ProfitScreen(onBack: () -> Unit) {
     }
 
     fun calculate() {
+        showDetails = false
+        detailDays = emptyList()
         try {
             val from = LocalDate.parse(startDate.trim())
             val rubRate = BigDecimal(usdtRubRate.trim().replace(',', '.'))
@@ -75,12 +80,14 @@ fun ProfitScreen(onBack: () -> Unit) {
             if (calculationMode == "BALANCE") {
                 val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
                 targetResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
+                detailDays = targetResult.days
                 errorText = null
                 return
             }
             if (calculationMode == "NET_PROFIT") {
                 val targetResult = TargetNetProfitCalculator.calculate(TargetNetProfitInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetNetProfit.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
                 netProfitResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
+                detailDays = targetResult.days
                 errorText = null
                 return
             }
@@ -99,6 +106,7 @@ fun ProfitScreen(onBack: () -> Unit) {
                     l1Count = if (l1AtLeast10) 10 else 0,
                 )
             )
+            detailDays = result.days
             dateResultText = buildString {
                 appendLine("Дней: $days")
                 appendLine("Итоговый уровень: ${result.finalLevel}")
@@ -198,6 +206,17 @@ fun ProfitScreen(onBack: () -> Unit) {
                     Text(it, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
+            if (detailDays.isNotEmpty()) {
+                OutlinedButton(
+                    onClick = { showDetails = !showDetails },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (showDetails) "Скрыть подробный расчёт" else "Подробный расчёт по дням")
+                }
+                if (showDetails) {
+                    DailyDetails(detailDays)
+                }
+            }
         }
     }
 }
@@ -233,4 +252,24 @@ private fun NumberField(label: String, value: String, onValueChange: (String) ->
         singleLine = true,
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+
+@Composable
+private fun DailyDetails(days: List<ProfitSimulationDay>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Подробный расчёт по дням", style = MaterialTheme.typography.titleMedium)
+        days.forEach { day ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    val transition = if (day.levelForNextDay != day.levelUsed) " → ${day.levelForNextDay}" else ""
+                    Text("${day.date} • ${day.levelUsed}${transition}", style = MaterialTheme.typography.titleSmall)
+                    Text("Сигналов: ${day.signalCount}")
+                    Text("Доход за сигнал: ${day.incomePerSignal.stripTrailingZeros().toPlainString()} USDT")
+                    Text("Доход за день: ${day.dailyIncome.stripTrailingZeros().toPlainString()} USDT")
+                    Text("Баланс: ${day.balanceAfter.stripTrailingZeros().toPlainString()} USDT")
+                }
+            }
+        }
+    }
 }
