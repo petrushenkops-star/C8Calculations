@@ -109,14 +109,30 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 Text("Результат распознавания", style = MaterialTheme.typography.titleLarge)
                 Text("При необходимости количество участников можно исправить вручную.")
 
-                (2..6).forEach { level ->
-                    TeamCountField(
-                        label = "C$level",
-                        value = counts[level - 1],
-                        onValueChange = { newValue ->
-                            counts = counts.toMutableList().also { it[level - 1] = newValue }
-                        }
-                    )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (2..4).forEach { level ->
+                        TeamCountField(
+                            label = "C$level",
+                            value = counts[level - 1],
+                            onValueChange = { newValue ->
+                                counts = counts.toMutableList().also { it[level - 1] = newValue }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (5..6).forEach { level ->
+                        TeamCountField(
+                            label = "C$level",
+                            value = counts[level - 1],
+                            onValueChange = { newValue ->
+                                counts = counts.toMutableList().also { it[level - 1] = newValue }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
                 }
 
                 Card(Modifier.fillMaxWidth()) {
@@ -124,7 +140,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text("Всего участников: $totalParticipants", style = MaterialTheme.typography.titleMedium)
+                        Text("$totalParticipants участников", style = MaterialTheme.typography.titleMedium)
                         leaderExcluded?.let { excluded ->
                             Text(
                                 if (excluded) "Лидер обнаружен и исключён из подсчёта"
@@ -142,7 +158,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun TeamCountField(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun TeamCountField(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     TextField(
         value = value,
         onValueChange = { text ->
@@ -151,6 +167,6 @@ private fun TeamCountField(label: String, value: String, onValueChange: (String)
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier
     )
 }

@@ -64,10 +64,8 @@ fun DividendScreen(onBack: () -> Unit) {
 
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Структура команды", style = MaterialTheme.typography.titleMedium)
-                    Text("C2 — $c2   C3 — $c3   C4 — $c4")
-                    Text("C5 — $c5   C6 — $c6")
-                    Text("Всего участников: $totalParticipants")
+                    Text("Команда · $totalParticipants участников", style = MaterialTheme.typography.titleMedium)
+                    Text("C2 $c2; C3 $c3; C4 $c4; C5 $c5; C6 $c6")
                 }
             }
             if (totalParticipants == 0) {
@@ -76,10 +74,6 @@ fun DividendScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            Text(
-                "Для изменения состава команды используйте раздел «Структура команды».",
-                style = MaterialTheme.typography.bodySmall
-            )
             IntegerField("Количество дней", days) { days = it }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) {
