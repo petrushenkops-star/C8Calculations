@@ -34,8 +34,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         mutableStateOf(if (preferences.contains("leaderExcluded")) preferences.getBoolean("leaderExcluded", false) else null)
     }
     var recognizing by remember { mutableStateOf(false) }
-    var diagnosticLines by remember { mutableStateOf<List<String>>(emptyList()) }
-    var rawOcrLines by remember { mutableStateOf<List<String>>(emptyList()) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -45,8 +43,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     recognizing = true
                     statusText = "Распознавание..."
                     leaderExcluded = null
-                    diagnosticLines = emptyList()
-                    rawOcrLines = emptyList()
                     TeamLevelRecognizer.recognize(bitmap) { result ->
                         recognizing = false
                         if (result == null) {
@@ -54,15 +50,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         } else {
                             counts = (1..6).map { if (it == 1) "0" else result.counts[it].toString() }
                             leaderExcluded = result.leaderExcluded
-                            diagnosticLines = result.cards
-                                .sortedWith(compareBy({ it.x }, { it.y }))
-                                .mapIndexed { index, card ->
-                                    "${index + 1}. C${card.level} • x=${card.x}, y=${card.y}" +
-                                        if (card.excludedAsLeader) " • исключён как лидер" else ""
-                                }
-                            rawOcrLines = result.ocrLines.mapIndexed { index, line ->
-                                "${index + 1}. x=${line.x}, y=${line.y} • ${line.text}"
-                            }
                             statusText = "Распознавание завершено: найдено карточек — ${result.detectedCards}"
                         }
                     }
@@ -122,8 +109,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 Text("Результат распознавания", style = MaterialTheme.typography.titleLarge)
                 Text("При необходимости количество участников можно исправить вручную.")
 
-                Text("C1 не учитываются в составе команды", style = MaterialTheme.typography.bodyMedium)
-
                 (2..6).forEach { level ->
                     TeamCountField(
                         label = "C$level",
@@ -146,35 +131,11 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                                 else "Лидер на изображении не обнаружен"
                             )
                         }
+                        Text("C1 не учитываются в составе команды")
+
                     }
                 }
 
-                if (diagnosticLines.isNotEmpty()) {
-                    HorizontalDivider()
-                    Text("Диагностика OCR", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Временный технический список. Пришлите скриншот этого блока после распознавания.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            diagnosticLines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-                        }
-                    }
-                }
-
-                if (rawOcrLines.isNotEmpty()) {
-                    Text("Исходные строки OCR", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Найдите здесь строки пропущенных C4 и пришлите скриншот.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            rawOcrLines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-                        }
-                    }
-                }
             }
         }
     }
