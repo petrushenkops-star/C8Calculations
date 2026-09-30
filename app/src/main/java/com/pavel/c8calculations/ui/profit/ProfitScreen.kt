@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
 import com.pavel.c8calculations.calculation.TargetBalanceCalculator
@@ -257,10 +258,13 @@ private fun ModeChip(selected: Boolean, text: String, modifier: Modifier = Modif
                 text = text,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                maxLines = 1
+                maxLines = 1,
+                fontSize = 13.sp
             )
         },
-        modifier = modifier.height(52.dp)
+        modifier = modifier.height(52.dp),
+        leadingIcon = null,
+        trailingIcon = null
     )
 }
 
