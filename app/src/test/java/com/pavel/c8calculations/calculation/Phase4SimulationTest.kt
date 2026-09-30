@@ -97,6 +97,43 @@ class Phase4SimulationTest {
     }
 
     @Test
+    fun dateModeProcessesTheWholeEndDateWhileTargetModeMayStopMidDay() {
+        val dateResult = ProfitSimulationEngine.simulate(
+            ProfitSimulationInput(
+                startDate = LocalDate.of(2026, 9, 30),
+                numberOfDays = 30,
+                startingLevel = ParticipantLevel.C5,
+                startingBalance = BigDecimal("6000"),
+                autoUpgradeEnabled = true,
+                x = 1,
+                isVip = true,
+                l1Count = 0,
+            )
+        )
+
+        assertEquals(LocalDate.of(2026, 10, 29), dateResult.days.last().date)
+        assertEquals(6, dateResult.days.last().signalCount)
+        assertMoney("14512", dateResult.expectedBalance)
+
+        val targetResult = TargetBalanceCalculator.calculate(
+            com.pavel.c8calculations.model.TargetBalanceInput(
+                startDate = LocalDate.of(2026, 9, 30),
+                startingLevel = ParticipantLevel.C5,
+                startingBalance = BigDecimal("6000"),
+                targetBalance = BigDecimal("14352"),
+                autoUpgradeEnabled = true,
+                x = 1,
+                isVip = true,
+                l1Count = 0,
+            )
+        )
+
+        assertEquals(LocalDate.of(2026, 10, 29), targetResult.reachedDate)
+        assertEquals(4, targetResult.reachedAfterSignal)
+        assertMoney("14352", targetResult.reachedBalance)
+    }
+
+    @Test
     fun invalidSimulationValuesAreRejected() {
         assertThrows(IllegalArgumentException::class.java) {
             ProfitSimulationEngine.simulate(
