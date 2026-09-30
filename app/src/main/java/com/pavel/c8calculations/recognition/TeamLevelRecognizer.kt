@@ -37,6 +37,7 @@ data class TeamRecognitionResult(
 
 object TeamLevelRecognizer {
     private val levelPattern = Pattern.compile("(?i)[CСCcСс]\\s*([1-6])")
+    private val c4AsLetterPattern = Pattern.compile("(?i)^\\s*[CСCcСс]\\s*[AАaа](?=\\s|$)")
     private val digitPattern = Pattern.compile("[1-6]")
 
     fun recognize(source: Bitmap, onResult: (TeamRecognitionResult?) -> Unit) {
@@ -86,6 +87,10 @@ object TeamLevelRecognizer {
                     addMatch(matcher.group(1)!!.toInt(), box, scale, matches)
                     levelFoundInElements = true
                 }
+                if (!levelFoundInElements && c4AsLetterPattern.matcher(raw).find()) {
+                    addMatch(4, box, scale, matches)
+                    levelFoundInElements = true
+                }
 
                 if (raw.matches(Regex("(?i)[CСCcСс]"))) {
                     for (k in index + 1 until min(elements.size, index + 3)) {
@@ -106,9 +111,12 @@ object TeamLevelRecognizer {
             // ML Kit can merge a level with the rest of a dense card into one OCR line.
             // Fall back to the complete line so C1-C6 is not lost when element segmentation varies.
             if (!levelFoundInElements) {
-                val lineMatcher = levelPattern.matcher(line.text.trim())
+                val lineText = line.text.trim()
+                val lineMatcher = levelPattern.matcher(lineText)
                 if (lineMatcher.find()) {
                     line.boundingBox?.let { addMatch(lineMatcher.group(1)!!.toInt(), it, scale, matches) }
+                } else if (c4AsLetterPattern.matcher(lineText).find()) {
+                    line.boundingBox?.let { addMatch(4, it, scale, matches) }
                 }
             }
         }}
