@@ -52,7 +52,6 @@ fun DividendScreen(onBack: () -> Unit) {
                         c3 = recognized.counts[3].toString(); c4 = recognized.counts[4].toString()
                         c5 = recognized.counts[5].toString(); c6 = recognized.counts[6].toString()
                         result = null
-                        recognizedSummary = "C1 — ${recognized.counts[1]}   C2 — ${recognized.counts[2]}   C3 — ${recognized.counts[3]}\nC4 — ${recognized.counts[4]}   C5 — ${recognized.counts[5]}   C6 — ${recognized.counts[6]}"
                         recognitionStatus = if (recognized.leaderExcluded)
                             "Структура распознана. Лидер в единственном левом блоке исключён. Проверьте количества."
                         else "Структура распознана. Лидер не определён: в левом столбце несколько блоков. Проверьте количества."
