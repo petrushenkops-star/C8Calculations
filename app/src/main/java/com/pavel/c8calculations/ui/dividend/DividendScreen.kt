@@ -10,6 +10,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import android.provider.MediaStore
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import com.pavel.c8calculations.recognition.TeamLevelRecognizer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,6 +35,8 @@ fun DividendScreen(onBack: () -> Unit) {
     var c6 by remember { mutableStateOf("0") }
     var result by remember { mutableStateOf<DividendResult?>(null) }
     var recognitionStatus by remember { mutableStateOf<String?>(null) }
+    var selectedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var recognizedSummary by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -38,6 +44,8 @@ fun DividendScreen(onBack: () -> Unit) {
             try {
                 @Suppress("DEPRECATION")
                 val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                selectedBitmap = bitmap
+                recognizedSummary = null
                 TeamLevelRecognizer.recognize(bitmap) { recognized ->
                     if (recognized == null) {
                         recognitionStatus = "Уровни C1–C6 не найдены. Введите количества вручную."
@@ -46,6 +54,7 @@ fun DividendScreen(onBack: () -> Unit) {
                         c3 = recognized.counts[3].toString(); c4 = recognized.counts[4].toString()
                         c5 = recognized.counts[5].toString(); c6 = recognized.counts[6].toString()
                         result = null
+                        recognizedSummary = "C1 — ${recognized.counts[1]}   C2 — ${recognized.counts[2]}   C3 — ${recognized.counts[3]}\nC4 — ${recognized.counts[4]}   C5 — ${recognized.counts[5]}   C6 — ${recognized.counts[6]}"
                         recognitionStatus = if (recognized.leaderExcluded)
                             "Структура распознана. Лидер в единственном левом блоке исключён. Проверьте количества."
                         else "Структура распознана. Лидер не определён: в левом столбце несколько блоков. Проверьте количества."
@@ -98,7 +107,25 @@ fun DividendScreen(onBack: () -> Unit) {
             OutlinedButton(onClick = { imagePicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
                 Text("Распознать структуру по изображению")
             }
+            selectedBitmap?.let { bitmap ->
+                Card(Modifier.fillMaxWidth()) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Загруженная структура команды",
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp).padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
             recognitionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            recognizedSummary?.let { summary ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Результат распознавания", style = MaterialTheme.typography.titleMedium)
+                        Text(summary)
+                    }
+                }
+            }
             Text("После распознавания все количества C1–C6 можно изменить вручную.", style = MaterialTheme.typography.bodySmall)
             IntegerField("Количество дней", days) { days = it }
             HorizontalDivider()
