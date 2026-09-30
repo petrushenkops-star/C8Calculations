@@ -14,10 +14,18 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+data class TeamDetectedCard(
+    val level: Int,
+    val x: Int,
+    val y: Int,
+    val excludedAsLeader: Boolean,
+)
+
 data class TeamRecognitionResult(
     val counts: IntArray,
     val detectedCards: Int,
     val leaderExcluded: Boolean,
+    val cards: List<TeamDetectedCard>,
 )
 
 object TeamLevelRecognizer {
@@ -123,7 +131,15 @@ object TeamLevelRecognizer {
         val leader = if (leftColumn.size == 1) leftColumn.first() else null
         val counts = IntArray(7)
         matches.forEach { if (it !== leader) counts[it.level]++ }
-        return TeamRecognitionResult(counts, matches.size, leader != null)
+        val cards = matches.map {
+            TeamDetectedCard(
+                level = it.level,
+                x = it.x,
+                y = it.y,
+                excludedAsLeader = it === leader,
+            )
+        }
+        return TeamRecognitionResult(counts, matches.size, leader != null, cards)
     }
 
     private data class Pass(val bitmap: Bitmap, val scale: Float)
