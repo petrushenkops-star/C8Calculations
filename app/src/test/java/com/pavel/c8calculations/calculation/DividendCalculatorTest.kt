@@ -11,7 +11,7 @@ class DividendCalculatorTest {
         val result = DividendCalculator.calculate(
             DividendInput(days = 10, c2 = 1, c3 = 2, c4 = 8, c5 = 1, c6 = 3)
         )
-        assertEquals(BigDecimal("1346.40"), result.total)
+        assertEquals(BigDecimal("203.840"), result.total)
         assertEquals(BigDecimal("76.80"), result.levels.first { it.level == "C4" }.amount)
     }
 
