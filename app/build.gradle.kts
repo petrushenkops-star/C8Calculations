@@ -11,7 +11,7 @@ android {
         applicationId = "com.pavel.c8calculations"
         minSdk = 26
         targetSdk = 37
-        versionCode = 18
+        versionCode = 100
         versionName = "0.9.0"
     }
 
