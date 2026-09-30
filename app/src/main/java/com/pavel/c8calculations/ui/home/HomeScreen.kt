@@ -23,7 +23,7 @@ fun HomeScreen(onProfit: () -> Unit, onTeam: () -> Unit, onDividend: () -> Unit)
         Column(
             Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
                 .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp) 
         ) {
             Text("Расчёты", style = MaterialTheme.typography.headlineMedium)
             Text(
