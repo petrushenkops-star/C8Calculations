@@ -34,6 +34,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         mutableStateOf(if (preferences.contains("leaderExcluded")) preferences.getBoolean("leaderExcluded", false) else null)
     }
     var recognizing by remember { mutableStateOf(false) }
+    var diagnosticLines by remember { mutableStateOf<List<String>>(emptyList()) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -43,6 +44,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     recognizing = true
                     statusText = "Распознавание..."
                     leaderExcluded = null
+                    diagnosticLines = emptyList()
                     TeamLevelRecognizer.recognize(bitmap) { result ->
                         recognizing = false
                         if (result == null) {
@@ -50,7 +52,13 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         } else {
                             counts = (1..6).map { if (it == 1) "0" else result.counts[it].toString() }
                             leaderExcluded = result.leaderExcluded
-                            statusText = "Распознавание завершено"
+                            diagnosticLines = result.cards
+                                .sortedWith(compareBy({ it.x }, { it.y }))
+                                .mapIndexed { index, card ->
+                                    "${index + 1}. C${card.level} • x=${card.x}, y=${card.y}" +
+                                        if (card.excludedAsLeader) " • исключён как лидер" else ""
+                                }
+                            statusText = "Распознавание завершено: найдено карточек — ${result.detectedCards}"
                         }
                     }
                 }
@@ -132,6 +140,20 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                                 if (excluded) "Лидер обнаружен и исключён из подсчёта"
                                 else "Лидер на изображении не обнаружен"
                             )
+                        }
+                    }
+                }
+
+                if (diagnosticLines.isNotEmpty()) {
+                    HorizontalDivider()
+                    Text("Диагностика OCR", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Временный технический список. Пришлите скриншот этого блока после распознавания.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            diagnosticLines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }
