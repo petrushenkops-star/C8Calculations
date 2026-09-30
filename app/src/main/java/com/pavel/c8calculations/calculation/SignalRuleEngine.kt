@@ -14,9 +14,11 @@ object SignalRuleEngine {
         require(x >= 0) { "X must be non-negative" }
         require(l1Count >= 0) { "L1 count must be non-negative" }
 
+        val config = LevelConfiguration.forLevel(level)
         return when (dayOfWeek) {
-            DayOfWeek.FRIDAY, DayOfWeek.SATURDAY -> 1 + if (l1Count >= 10) 1 else 0
-            else -> LevelConfiguration.forLevel(level).baseSignalCount + x + if (isVip) 1 else 0
+            DayOfWeek.FRIDAY -> config.fridaySignalCount + if (l1Count >= 10) 1 else 0
+            DayOfWeek.SATURDAY -> config.saturdaySignalCount + if (l1Count >= 10) 1 else 0
+            else -> config.baseSignalCount + x + if (isVip) 1 else 0
         }
     }
 }
