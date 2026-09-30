@@ -36,7 +36,6 @@ fun DividendScreen(onBack: () -> Unit) {
     var result by remember { mutableStateOf<DividendResult?>(null) }
     var recognitionStatus by remember { mutableStateOf<String?>(null) }
     var selectedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var recognizedSummary by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -45,7 +44,6 @@ fun DividendScreen(onBack: () -> Unit) {
                 @Suppress("DEPRECATION")
                 val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                 selectedBitmap = bitmap
-                recognizedSummary = null
                 TeamLevelRecognizer.recognize(bitmap) { recognized ->
                     if (recognized == null) {
                         recognitionStatus = "Уровни C1–C6 не найдены. Введите количества вручную."
@@ -118,18 +116,9 @@ fun DividendScreen(onBack: () -> Unit) {
                 }
             }
             recognitionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            recognizedSummary?.let { summary ->
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Результат распознавания", style = MaterialTheme.typography.titleMedium)
-                        Text(summary)
-                    }
-                }
-            }
             Text("После распознавания все количества C1–C6 можно изменить вручную.", style = MaterialTheme.typography.bodySmall)
-            IntegerField("Количество дней", days) { days = it }
             HorizontalDivider()
-            Text("Количество участников", style = MaterialTheme.typography.titleMedium)
+            Text("Результат распознавания", style = MaterialTheme.typography.titleMedium)
             IntegerField("C1", c1) { c1 = it }
             IntegerField("C2", c2) { c2 = it }
             IntegerField("C3", c3) { c3 = it }
@@ -138,6 +127,8 @@ fun DividendScreen(onBack: () -> Unit) {
             IntegerField("C6", c6) { c6 = it }
 
             Text("C1 сохраняется для структуры команды, но в формулу дивидендов не входит.", style = MaterialTheme.typography.bodySmall)
+
+            IntegerField("Количество дней", days) { days = it }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) {
                 Text("Рассчитать")
