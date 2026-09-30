@@ -16,6 +16,17 @@ class DividendCalculatorTest {
     }
 
     @Test
+    fun currentTeamStructureHas28ParticipantsAndC1DoesNotAffectDividend() {
+        val currentStructure = DividendInput(days = 10, c1 = 1, c2 = 0, c3 = 6, c4 = 10, c5 = 6, c6 = 6)
+        val result = DividendCalculator.calculate(currentStructure)
+        assertEquals(28, result.levels.sumOf { it.participants })
+        assertEquals(BigDecimal("340.800"), result.total)
+
+        val sameStructureWithoutC1 = DividendCalculator.calculate(currentStructure.copy(c1 = 0))
+        assertEquals(result.total, sameStructureWithoutC1.total)
+    }
+
+    @Test
     fun c1DoesNotAffectDividend() {
         val withoutC1 = DividendCalculator.calculate(DividendInput(days = 10, c2 = 2))
         val withC1 = DividendCalculator.calculate(DividendInput(days = 10, c1 = 100, c2 = 2))
