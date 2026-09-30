@@ -21,18 +21,11 @@ data class TeamDetectedCard(
     val excludedAsLeader: Boolean,
 )
 
-data class TeamOcrLine(
-    val text: String,
-    val x: Int,
-    val y: Int,
-)
-
 data class TeamRecognitionResult(
     val counts: IntArray,
     val detectedCards: Int,
     val leaderExcluded: Boolean,
     val cards: List<TeamDetectedCard>,
-    val ocrLines: List<TeamOcrLine>,
 )
 
 object TeamLevelRecognizer {
@@ -42,7 +35,6 @@ object TeamLevelRecognizer {
 
     fun recognize(source: Bitmap, onResult: (TeamRecognitionResult?) -> Unit) {
         val matches = mutableListOf<LevelMatch>()
-        val ocrLines = mutableListOf<TeamOcrLine>()
         val scaledWidth = min(source.width * 2, 3000)
         val scale = scaledWidth.toFloat() / source.width
         val enlarged = Bitmap.createScaledBitmap(source, scaledWidth, (source.height * scale).roundToInt(), true)
@@ -55,28 +47,20 @@ object TeamLevelRecognizer {
         passes.forEach { pass ->
             recognizer.process(InputImage.fromBitmap(pass.bitmap, 0))
                 .addOnSuccessListener { text ->
-                    synchronized(lock) { collect(text, pass.scale, matches, ocrLines) }
+                    synchronized(lock) { collect(text, pass.scale, matches) }
                 }
                 .addOnCompleteListener {
                     if (remaining.decrementAndGet() == 0) {
                         recognizer.close()
-                        val result = synchronized(lock) { buildResult(matches, ocrLines) }
+                        val result = synchronized(lock) { buildResult(matches) }
                         onResult(result)
                     }
                 }
         }
     }
 
-    private fun collect(text: Text, scale: Float, matches: MutableList<LevelMatch>, ocrLines: MutableList<TeamOcrLine>) {
+    private fun collect(text: Text, scale: Float, matches: MutableList<LevelMatch>) {
         text.textBlocks.forEach { block -> block.lines.forEach { line ->
-            line.boundingBox?.let { box ->
-                val x = (box.left / scale).roundToInt()
-                val y = (box.centerY() / scale).roundToInt()
-                val rawText = line.text.trim()
-                if (rawText.isNotBlank() && ocrLines.none { abs(it.x - x) <= 45 && abs(it.y - y) <= 20 && it.text == rawText }) {
-                    ocrLines += TeamOcrLine(rawText, x, y)
-                }
-            }
             val elements = line.elements
             var levelFoundInElements = false
             elements.forEachIndexed { index, element ->
@@ -146,7 +130,7 @@ object TeamLevelRecognizer {
         return result
     }
 
-    private fun buildResult(raw: List<LevelMatch>, ocrLines: List<TeamOcrLine>): TeamRecognitionResult? {
+    private fun buildResult(raw: List<LevelMatch>): TeamRecognitionResult? {
         if (raw.isEmpty()) return null
         val matches = raw.sortedWith(compareBy<LevelMatch> { it.x }.thenBy { it.y })
         val minX = matches.minOf { it.x }
@@ -163,7 +147,7 @@ object TeamLevelRecognizer {
                 excludedAsLeader = it === leader,
             )
         }
-        return TeamRecognitionResult(counts, matches.size, leader != null, cards, ocrLines.sortedWith(compareBy({ it.x }, { it.y })))
+        return TeamRecognitionResult(counts, matches.size, leader != null, cards)
     }
 
     private data class Pass(val bitmap: Bitmap, val scale: Float)
