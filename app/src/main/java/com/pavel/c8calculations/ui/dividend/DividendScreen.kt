@@ -80,8 +80,6 @@ fun DividendScreen(onBack: () -> Unit) {
                 "Для изменения состава команды используйте раздел «Структура команды».",
                 style = MaterialTheme.typography.bodySmall
             )
-            Text("C1 не учитываются в составе команды.", style = MaterialTheme.typography.bodySmall)
-
             IntegerField("Количество дней", days) { days = it }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) {
