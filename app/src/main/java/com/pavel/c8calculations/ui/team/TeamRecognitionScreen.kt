@@ -48,7 +48,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         if (result == null) {
                             statusText = "Не удалось распознать уровни C1–C6"
                         } else {
-                            counts = (1..6).map { if (it == 1) "0" else result.counts[it].toString() }
+                            counts = (1..6).map { result.counts[it].toString() }
                             leaderExcluded = result.leaderExcluded
                             statusText = "Распознавание завершено: найдено карточек — ${result.detectedCards}"
                         }
@@ -63,7 +63,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 
     LaunchedEffect(counts, leaderExcluded) {
         val editor = preferences.edit()
-        counts.forEachIndexed { index, value -> editor.putInt("c${index + 1}", if (index == 0) 0 else value.toIntOrNull()?.coerceAtLeast(0) ?: 0) }
+        counts.forEachIndexed { index, value -> editor.putInt("c${index + 1}", value.toIntOrNull()?.coerceAtLeast(0) ?: 0) }
         leaderExcluded?.let { editor.putBoolean("leaderExcluded", it) }
         editor.apply()
     }
@@ -116,7 +116,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 Text("При необходимости количество участников можно исправить вручную.")
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    (2..4).forEach { level ->
+                    (1..3).forEach { level ->
                         TeamCountField(
                             label = "C$level",
                             value = counts[level - 1],
@@ -128,7 +128,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    (5..6).forEach { level ->
+                    (4..6).forEach { level ->
                         TeamCountField(
                             label = "C$level",
                             value = counts[level - 1],
@@ -138,7 +138,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    Spacer(Modifier.weight(1f))
                 }
 
                 Card(Modifier.fillMaxWidth()) {
