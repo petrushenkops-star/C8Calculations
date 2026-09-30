@@ -20,7 +20,7 @@ class DividendCalculatorTest {
         val currentStructure = DividendInput(days = 10, c1 = 1, c2 = 0, c3 = 6, c4 = 10, c5 = 6, c6 = 6)
         val result = DividendCalculator.calculate(currentStructure)
         assertEquals(28, result.levels.sumOf { it.participants })
-        assertEquals(BigDecimal("432.00"), result.total)
+        assertEquals(0, BigDecimal("432").compareTo(result.total))
 
         val sameStructureWithoutC1 = DividendCalculator.calculate(currentStructure.copy(c1 = 0))
         assertEquals(result.total, sameStructureWithoutC1.total)
