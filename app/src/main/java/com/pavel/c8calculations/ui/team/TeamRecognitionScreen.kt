@@ -22,10 +22,17 @@ import com.pavel.c8calculations.recognition.TeamLevelRecognizer
 @Composable
 fun TeamRecognitionScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val preferences = remember {
+        context.getSharedPreferences("team_structure", android.content.Context.MODE_PRIVATE)
+    }
     var selectedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var counts by remember { mutableStateOf(List(6) { "0" }) }
+    var counts by remember {
+        mutableStateOf((1..6).map { preferences.getInt("c$it", 0).toString() })
+    }
     var statusText by remember { mutableStateOf<String?>(null) }
-    var leaderExcluded by remember { mutableStateOf<Boolean?>(null) }
+    var leaderExcluded by remember {
+        mutableStateOf(if (preferences.contains("leaderExcluded")) preferences.getBoolean("leaderExcluded", false) else null)
+    }
     var recognizing by remember { mutableStateOf(false) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -52,6 +59,13 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     leaderExcluded = null
                 }
         }
+    }
+
+    LaunchedEffect(counts, leaderExcluded) {
+        val editor = preferences.edit()
+        counts.forEachIndexed { index, value -> editor.putInt("c${index + 1}", value.toIntOrNull()?.coerceAtLeast(0) ?: 0) }
+        leaderExcluded?.let { editor.putBoolean("leaderExcluded", it) }
+        editor.apply()
     }
 
     val totalParticipants = counts.sumOf { it.toIntOrNull()?.coerceAtLeast(0) ?: 0 }
@@ -90,7 +104,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 
             statusText?.let { Text(it) }
 
-            if (selectedBitmap != null) {
+            if (selectedBitmap != null || counts.any { (it.toIntOrNull() ?: 0) > 0 }) {
                 HorizontalDivider()
                 Text("Результат распознавания", style = MaterialTheme.typography.titleLarge)
                 Text("При необходимости количество участников можно исправить вручную.")
