@@ -85,7 +85,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         ) {
             Button(
                 onClick = { imagePicker.launch("image/*") },
-                modifier = modifier,
+                modifier = Modifier.fillMaxWidth(),
                 enabled = !recognizing
             ) {
                 Text(if (selectedBitmap == null) "Загрузить структуру команды" else "Выбрать другое изображение")
