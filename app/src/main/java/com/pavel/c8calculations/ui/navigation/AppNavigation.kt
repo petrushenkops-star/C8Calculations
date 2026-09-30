@@ -23,6 +23,11 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
         composable(Routes.HOME) { HomeScreen(onProfit = { navController.navigate(Routes.PROFIT) }, onTeam = { navController.navigate(Routes.TEAM) }, onDividend = { navController.navigate(Routes.DIVIDEND) }) }
         composable(Routes.PROFIT) { ProfitScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.TEAM) { TeamRecognitionScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.DIVIDEND) { DividendScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.DIVIDEND) {
+            DividendScreen(
+                onBack = { navController.popBackStack() },
+                onEditTeam = { navController.navigate(Routes.TEAM) }
+            )
+        }
     }
 }
