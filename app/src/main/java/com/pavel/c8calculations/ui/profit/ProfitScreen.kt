@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
 import com.pavel.c8calculations.calculation.TargetBalanceCalculator
@@ -152,9 +153,9 @@ fun ProfitScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = calculationMode == "DATE", onClick = { calculationMode = "DATE"; dateResultText = null; errorText = null }, label = { Text("До даты") }, modifier = Modifier.weight(1f))
-                FilterChip(selected = calculationMode == "BALANCE", onClick = { calculationMode = "BALANCE"; targetResultText = null; errorText = null }, label = { Text("До баланса") }, modifier = Modifier.weight(1f))
-                FilterChip(selected = calculationMode == "NET_PROFIT", onClick = { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }, label = { Text("До прибыли") }, modifier = Modifier.weight(1f))
+                ModeChip(calculationMode == "DATE", "До даты", Modifier.weight(1f)) { calculationMode = "DATE"; dateResultText = null; errorText = null }
+                ModeChip(calculationMode == "BALANCE", "До баланса", Modifier.weight(1f)) { calculationMode = "BALANCE"; targetResultText = null; errorText = null }
+                ModeChip(calculationMode == "NET_PROFIT", "До прибыли", Modifier.weight(1f)) { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }
             }
             Text(when (calculationMode) { "BALANCE" -> "Расчёт до баланса"; "NET_PROFIT" -> "Расчёт до чистой прибыли"; else -> "Расчёт до даты" }, style = MaterialTheme.typography.titleLarge)
 
@@ -245,6 +246,23 @@ fun ProfitScreen(onBack: () -> Unit) {
     }
 }
 
+
+@Composable
+private fun ModeChip(selected: Boolean, text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = text,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        },
+        modifier = modifier.height(52.dp)
+    )
+}
 
 private fun formatTargetResult(
     reachedDate: LocalDate, reachedAfterSignal: Int, daysCount: Int, totalSignals: Int,
