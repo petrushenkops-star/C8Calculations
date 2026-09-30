@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
 import com.pavel.c8calculations.calculation.TargetBalanceCalculator
@@ -151,11 +152,11 @@ fun ProfitScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = calculationMode == "DATE", onClick = { calculationMode = "DATE"; dateResultText = null; errorText = null }, label = { Text("До даты") })
-                FilterChip(selected = calculationMode == "BALANCE", onClick = { calculationMode = "BALANCE"; targetResultText = null; errorText = null }, label = { Text("До баланса") })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ModeChip(calculationMode == "DATE", "До даты", Modifier.weight(1f)) { calculationMode = "DATE"; dateResultText = null; errorText = null }
+                ModeChip(calculationMode == "BALANCE", "До баланса", Modifier.weight(1f)) { calculationMode = "BALANCE"; targetResultText = null; errorText = null }
+                ModeChip(calculationMode == "NET_PROFIT", "До прибыли", Modifier.weight(1f)) { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }
             }
-            FilterChip(selected = calculationMode == "NET_PROFIT", onClick = { calculationMode = "NET_PROFIT"; netProfitResultText = null; errorText = null }, label = { Text("До чистой прибыли") })
             Text(when (calculationMode) { "BALANCE" -> "Расчёт до баланса"; "NET_PROFIT" -> "Расчёт до чистой прибыли"; else -> "Расчёт до даты" }, style = MaterialTheme.typography.titleLarge)
 
             Text("Текущий уровень")
@@ -209,17 +210,17 @@ fun ProfitScreen(onBack: () -> Unit) {
             NumberField("Кол-во лидерских сигналов", x) { x = it }
             NumberField("Курс USDT, ₽", usdtRubRate) { usdtRubRate = it }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Кол-во участников на L1 ≥ 10")
-                Checkbox(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
+                Text("L1 ≥ 10")
+                Switch(checked = l1AtLeast10, onCheckedChange = { l1AtLeast10 = it })
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("VIP")
-                Checkbox(checked = vip, onCheckedChange = { vip = it })
+                Switch(checked = vip, onCheckedChange = { vip = it })
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Автопереход между уровнями")
-                Checkbox(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
+                Text("Автопереход уровней")
+                Switch(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
             }
 
             Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) { Text("Рассчитать") }
@@ -245,6 +246,29 @@ fun ProfitScreen(onBack: () -> Unit) {
     }
 }
 
+
+@Composable
+private fun ModeChip(selected: Boolean, text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val colors = if (selected) {
+        ButtonDefaults.filledTonalButtonColors()
+    } else {
+        ButtonDefaults.outlinedButtonColors()
+    }
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.height(52.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+        colors = colors
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
 
 private fun formatTargetResult(
     reachedDate: LocalDate, reachedAfterSignal: Int, daysCount: Int, totalSignals: Int,
