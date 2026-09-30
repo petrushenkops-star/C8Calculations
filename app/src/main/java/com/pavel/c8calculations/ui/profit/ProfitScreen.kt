@@ -20,6 +20,7 @@ import com.pavel.c8calculations.model.ProfitSimulationInput
 import com.pavel.c8calculations.model.TargetBalanceInput
 import com.pavel.c8calculations.model.TargetNetProfitInput
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
@@ -46,6 +47,7 @@ fun ProfitScreen(onBack: () -> Unit) {
     var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
     var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
     var targetNetProfit by remember { mutableStateOf(preferences.getString("targetNetProfit", "100") ?: "100") }
+    var targetNetProfitCurrency by remember { mutableStateOf(preferences.getString("targetNetProfitCurrency", "USDT") ?: "USDT") }
     var usdtRubRate by remember { mutableStateOf(preferences.getString("usdtRubRate", "80") ?: "80") }
     var calculationMode by remember { mutableStateOf(preferences.getString("calculationMode", if (preferences.getBoolean("targetMode", false)) "BALANCE" else "DATE") ?: "DATE") }
     var dateResultText by remember { mutableStateOf<String?>(null) }
@@ -55,7 +57,7 @@ fun ProfitScreen(onBack: () -> Unit) {
     var detailDays by remember { mutableStateOf<List<ProfitSimulationDay>>(emptyList()) }
     var showDetails by remember { mutableStateOf(false) }
 
-    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, usdtRubRate, calculationMode) {
+    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, targetNetProfitCurrency, usdtRubRate, calculationMode) {
         preferences.edit()
             .putString("level", level.name)
             .putString("balance", balance)
@@ -65,6 +67,7 @@ fun ProfitScreen(onBack: () -> Unit) {
             .putBoolean("autoUpgrade", autoUpgrade)
             .putString("targetBalance", targetBalance)
             .putString("targetNetProfit", targetNetProfit)
+            .putString("targetNetProfitCurrency", targetNetProfitCurrency)
             .putString("usdtRubRate", usdtRubRate)
             .putString("calculationMode", calculationMode)
             .apply()
@@ -85,7 +88,12 @@ fun ProfitScreen(onBack: () -> Unit) {
                 return
             }
             if (calculationMode == "NET_PROFIT") {
-                val targetResult = TargetNetProfitCalculator.calculate(TargetNetProfitInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetNetProfit.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
+                val enteredTarget = BigDecimal(targetNetProfit.trim().replace(',', '.'))
+                require(enteredTarget.signum() >= 0) { "Целевая чистая прибыль не может быть отрицательной" }
+                val targetInUsdt = if (targetNetProfitCurrency == "RUB")
+                    enteredTarget.divide(rubRate, 8, RoundingMode.HALF_UP)
+                else enteredTarget
+                val targetResult = TargetNetProfitCalculator.calculate(TargetNetProfitInput(from, level, BigDecimal(balance.trim().replace(',', '.')), targetInUsdt, autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
                 netProfitResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
                 detailDays = targetResult.days
                 errorText = null
@@ -174,7 +182,23 @@ fun ProfitScreen(onBack: () -> Unit) {
             if (calculationMode == "BALANCE") {
                 NumberField("Целевой баланс, USDT", targetBalance) { targetBalance = it }
             } else if (calculationMode == "NET_PROFIT") {
-                NumberField("Целевая чистая прибыль, USDT", targetNetProfit) { targetNetProfit = it }
+                Text("Целевая чистая прибыль")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = targetNetProfitCurrency == "USDT",
+                        onClick = { targetNetProfitCurrency = "USDT"; netProfitResultText = null; errorText = null },
+                        label = { Text("USDT") }
+                    )
+                    FilterChip(
+                        selected = targetNetProfitCurrency == "RUB",
+                        onClick = { targetNetProfitCurrency = "RUB"; netProfitResultText = null; errorText = null },
+                        label = { Text("₽") }
+                    )
+                }
+                NumberField(
+                    if (targetNetProfitCurrency == "RUB") "Целевая чистая прибыль, ₽" else "Целевая чистая прибыль, USDT",
+                    targetNetProfit
+                ) { targetNetProfit = it }
             } else {
                 TextField(
                     value = endDate, onValueChange = { endDate = it },
