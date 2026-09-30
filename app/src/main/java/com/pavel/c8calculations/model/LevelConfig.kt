@@ -7,4 +7,6 @@ data class LevelConfig(
     val deposit: BigDecimal,
     val incomePerSignal: BigDecimal,
     val baseSignalCount: Int,
+    val fridaySignalCount: Int,
+    val saturdaySignalCount: Int,
 )
