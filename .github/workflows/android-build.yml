@@ -69,6 +69,11 @@ jobs:
           C8_KEY_ALIAS: ${{ secrets.C8_KEY_ALIAS }}
           C8_KEY_PASSWORD: ${{ secrets.C8_KEY_PASSWORD }}
         run: gradle --no-daemon :app:assembleRelease
+      - name: Verify APK signature and certificate
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
       - name: Rename release APK
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/C8Calculations-v0.9.0-rc.apk
       - name: Verify release APK exists
