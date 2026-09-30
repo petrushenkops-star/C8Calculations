@@ -60,7 +60,12 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Расчёт дивидендов", style = MaterialTheme.typography.titleLarge)
+            Text("Расчёт дивидендов", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Расчёт по сохранённой структуре команды",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -105,14 +110,16 @@ private fun IntegerField(label: String, value: String, onValueChange: (String) -
 private fun DividendResultCard(result: DividendResult) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Итого", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("${format(result.total)} USDT", style = MaterialTheme.typography.headlineMedium)
+            HorizontalDivider()
             Text("Расшифровка", style = MaterialTheme.typography.titleMedium)
             result.levels.forEach { item ->
                 Text(
                     "${item.level}: ${format(item.baseAmount)} × 0,02 × ${result.days} × ${item.participants} = ${format(item.amount)} USDT"
                 )
             }
-            HorizontalDivider()
-            Text("Итого: ${format(result.total)} USDT", style = MaterialTheme.typography.titleLarge)
+ 
         }
     }
 }
