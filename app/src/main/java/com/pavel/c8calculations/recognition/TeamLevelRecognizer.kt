@@ -51,11 +51,15 @@ object TeamLevelRecognizer {
     private fun collect(text: Text, scale: Float, matches: MutableList<LevelMatch>) {
         text.textBlocks.forEach { block -> block.lines.forEach { line ->
             val elements = line.elements
+            var levelFoundInElements = false
             elements.forEachIndexed { index, element ->
                 val box = element.boundingBox ?: return@forEachIndexed
                 val raw = element.text.trim()
                 val matcher = levelPattern.matcher(raw)
-                while (matcher.find()) addMatch(matcher.group(1)!!.toInt(), box, scale, matches)
+                while (matcher.find()) {
+                    addMatch(matcher.group(1)!!.toInt(), box, scale, matches)
+                    levelFoundInElements = true
+                }
 
                 if (raw.matches(Regex("(?i)[CСCcСс]"))) {
                     for (k in index + 1 until min(elements.size, index + 3)) {
@@ -66,9 +70,19 @@ object TeamLevelRecognizer {
                             abs(nextBox.centerY() - box.centerY()) < max(35f * scale, box.height().toFloat())) {
                             val pair = Rect(box).apply { union(nextBox) }
                             addMatch(digit.toInt(), pair, scale, matches)
+                            levelFoundInElements = true
                             break
                         }
                     }
+                }
+            }
+
+            // ML Kit can merge a level with the rest of a dense card into one OCR line.
+            // Fall back to the complete line so C1-C6 is not lost when element segmentation varies.
+            if (!levelFoundInElements) {
+                val lineMatcher = levelPattern.matcher(line.text.trim())
+                if (lineMatcher.find()) {
+                    line.boundingBox?.let { addMatch(lineMatcher.group(1)!!.toInt(), it, scale, matches) }
                 }
             }
         }}
