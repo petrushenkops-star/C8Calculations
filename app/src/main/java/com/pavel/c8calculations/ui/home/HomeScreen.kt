@@ -11,13 +11,12 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onProfit: () -> Unit, onTeam: () -> Unit, onDividend: () -> Unit, onSettings: () -> Unit) {
+fun HomeScreen(onProfit: () -> Unit, onTeam: () -> Unit, onDividend: () -> Unit) {
     Scaffold(topBar = { TopAppBar(title = { Text("С8 Расчеты") }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).navigationBarsPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Button(onClick = onProfit, modifier = Modifier.fillMaxWidth()) { Text("Прогноз прибыли") }
             Button(onClick = onTeam, modifier = Modifier.fillMaxWidth()) { Text("Структура команды") }
             Button(onClick = onDividend, modifier = Modifier.fillMaxWidth()) { Text("Дивиденды") }
-            Button(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text("Настройки") }
         }
     }
 }
