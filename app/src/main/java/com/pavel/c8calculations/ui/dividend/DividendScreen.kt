@@ -63,7 +63,7 @@ fun DividendScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Ручной расчёт", style = MaterialTheme.typography.titleLarge)
+            Text("Ручной расчёт", style = MaterialTheme.typography.titleLarge) // Dividend module 0.1.8
             IntegerField("Количество дней", days) { days = it }
             HorizontalDivider()
             Text("Количество участников", style = MaterialTheme.typography.titleMedium)
