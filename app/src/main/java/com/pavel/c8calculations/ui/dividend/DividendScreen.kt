@@ -17,7 +17,7 @@ import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DividendScreen(onBack: () -> Unit) {
+fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     val context = LocalContext.current
     val preferences = remember {
         context.getSharedPreferences("team_structure", android.content.Context.MODE_PRIVATE)
@@ -73,6 +73,9 @@ fun DividendScreen(onBack: () -> Unit) {
                     "Структура команды ещё не задана. Сначала загрузите её в разделе «Структура команды».",
                     color = MaterialTheme.colorScheme.error
                 )
+            }
+            OutlinedButton(onClick = onEditTeam, modifier = Modifier.fillMaxWidth()) {
+                Text("Изменить структуру")
             }
             IntegerField("Количество дней", days) { days = it }
 

@@ -40,8 +40,8 @@ fun ProfitScreen(onBack: () -> Unit) {
         )
     }
     var balance by remember { mutableStateOf(preferences.getString("balance", "300") ?: "300") }
-    var startDate by remember { mutableStateOf(LocalDate.now().toString()) }
-    var endDate by remember { mutableStateOf(LocalDate.now().plusDays(30).toString()) }
+    var startDate by remember { mutableStateOf(preferences.getString("startDate", LocalDate.now().toString()) ?: LocalDate.now().toString()) }
+    var endDate by remember { mutableStateOf(preferences.getString("endDate", LocalDate.now().plusDays(30).toString()) ?: LocalDate.now().plusDays(30).toString()) }
     var x by remember { mutableStateOf(preferences.getString("leaderSignals", "0") ?: "0") }
     var vip by remember { mutableStateOf(preferences.getBoolean("vip", false)) }
     var l1AtLeast10 by remember { mutableStateOf(preferences.getBoolean("l1AtLeast10", false)) }
@@ -58,10 +58,12 @@ fun ProfitScreen(onBack: () -> Unit) {
     var detailDays by remember { mutableStateOf<List<ProfitSimulationDay>>(emptyList()) }
     var showDetails by remember { mutableStateOf(false) }
 
-    LaunchedEffect(level, balance, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, targetNetProfitCurrency, usdtRubRate, calculationMode) {
+    LaunchedEffect(level, balance, startDate, endDate, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, targetNetProfitCurrency, usdtRubRate, calculationMode) {
         preferences.edit()
             .putString("level", level.name)
             .putString("balance", balance)
+            .putString("startDate", startDate)
+            .putString("endDate", endDate)
             .putString("leaderSignals", x)
             .putBoolean("vip", vip)
             .putBoolean("l1AtLeast10", l1AtLeast10)
