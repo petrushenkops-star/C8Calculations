@@ -33,21 +33,10 @@ enum TeamOCRService {
     }
 
     static func counts(from members: [RecognizedTeamMember]) -> [ParticipantLevel: Int] {
-        var filtered = members
-        if let leaderIndex = leaderIndex(in: members) { filtered.remove(at: leaderIndex) }
-        var result = Dictionary(uniqueKeysWithValues: ParticipantLevel.allCases.map { ($0, 0) })
-        for member in filtered { result[member.level, default: 0] += 1 }
-        return result
-    }
-
-    static func leaderIndex(in members: [RecognizedTeamMember]) -> Int? {
-        guard !members.isEmpty else { return nil }
-        let minX = members.map { $0.box.midX }.min()!
-        let widths = members.map { $0.box.width }.sorted()
-        let medianWidth = widths[widths.count / 2]
-        let tolerance = max(medianWidth * 0.65, 0.025)
-        let leftColumn = members.indices.filter { abs(members[$0].box.midX - minX) <= tolerance }
-        return leftColumn.count == 1 ? leftColumn[0] : nil
+        let boxes = members.map {
+            TeamMemberBox(level: $0.level, midX: Double($0.box.midX), width: Double($0.box.width))
+        }
+        return TeamLayoutAnalyzer.countsExcludingLeader(boxes)
     }
 
     private static func level(from raw: String) -> ParticipantLevel? {
