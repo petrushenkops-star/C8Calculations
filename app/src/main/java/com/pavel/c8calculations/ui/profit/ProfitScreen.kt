@@ -12,6 +12,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
@@ -127,12 +131,12 @@ fun ProfitScreen(onBack: () -> Unit) {
             dateResultText = buildString {
                 appendLine("Дней: $days")
                 appendLine("Итоговый уровень: ${result.finalLevel}")
-                appendLine("Ожидаемый баланс: ${result.expectedBalance.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Депозит уровня: ${result.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Прибыль до удержания: ${result.grossProfit.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Комиссия 30%: ${result.withholding.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Чистая прибыль: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
-                append("Чистая прибыль, ₽: ${result.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
+                appendLine("Ожидаемый баланс: ${formatNumber(result.expectedBalance)} USDT")
+                appendLine("Депозит уровня: ${formatNumber(result.currentDeposit)} USDT")
+                appendLine("Прибыль до удержания: ${formatNumber(result.grossProfit)} USDT")
+                appendLine("Комиссия 30%: ${formatNumber(result.withholding)} USDT")
+                appendLine("Чистая прибыль: ${formatNumber(result.netProfit)} USDT")
+                append("Чистая прибыль, ₽: ${formatNumber(result.netProfit.multiply(rubRate))} ₽")
             }
             errorText = null
         } catch (_: DateTimeParseException) {
@@ -298,14 +302,61 @@ private fun formatTargetResult(
     appendLine("После сигнала: $reachedAfterSignal")
     appendLine("Календарных дней: $daysCount")
     appendLine("Сигналов: $totalSignals")
-    appendLine("Доход за период: ${totalIncome.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Достигнутый баланс: ${reachedBalance.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Доход за период: ${formatNumber(totalIncome)} USDT")
+    appendLine("Достигнутый баланс: ${formatNumber(reachedBalance)} USDT")
     appendLine("Итоговый уровень: $finalLevel")
-    appendLine("Депозит уровня: ${currentDeposit.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Прибыль до удержания: ${grossProfit.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Комиссия 30%: ${withholding.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Чистая прибыль: ${netProfit.stripTrailingZeros().toPlainString()} USDT")
-    append("Чистая прибыль, ₽: ${netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
+    appendLine("Депозит уровня: ${formatNumber(currentDeposit)} USDT")
+    appendLine("Прибыль до удержания: ${formatNumber(grossProfit)} USDT")
+    appendLine("Комиссия 30%: ${formatNumber(withholding)} USDT")
+    appendLine("Чистая прибыль: ${formatNumber(netProfit)} USDT")
+    append("Чистая прибыль, ₽: ${formatNumber(netProfit.multiply(rubRate))} ₽")
+}
+
+private fun formatNumber(value: BigDecimal): String {
+    val plain = value.stripTrailingZeros().toPlainString()
+    val parts = plain.split('.', limit = 2)
+    val sign = if (parts[0].startsWith("-")) "-" else ""
+    val integer = parts[0].removePrefix("-")
+    val grouped = integer.reversed().chunked(3).joinToString("\u202F").reversed()
+    return sign + grouped + if (parts.size == 2) "," + parts[1] else ""
+}
+
+private val ThinSpaceNumberTransformation = VisualTransformation { text ->
+    val source = text.text
+    val decimalIndex = source.indexOfFirst { it == '.' || it == ',' }.let { if (it < 0) source.length else it }
+    val integerPart = source.substring(0, decimalIndex)
+    val decimalPart = source.substring(decimalIndex)
+    val grouped = integerPart.reversed().chunked(3).joinToString("\u202F").reversed() + decimalPart
+
+    val originalToTransformed = IntArray(source.length + 1)
+    val transformedToOriginal = IntArray(grouped.length + 1)
+    var originalIndex = 0
+    var transformedIndex = 0
+    originalToTransformed[0] = 0
+    while (originalIndex < source.length) {
+        while (transformedIndex < grouped.length && grouped[transformedIndex] == '\u202F') {
+            transformedToOriginal[transformedIndex] = originalIndex
+            transformedIndex++
+        }
+        if (transformedIndex < grouped.length) {
+            transformedToOriginal[transformedIndex] = originalIndex
+            originalIndex++
+            transformedIndex++
+            originalToTransformed[originalIndex] = transformedIndex
+        }
+    }
+    while (transformedIndex <= grouped.length) {
+        transformedToOriginal[transformedIndex] = originalIndex
+        transformedIndex++
+    }
+
+    TransformedText(
+        AnnotatedString(grouped),
+        object : OffsetMapping {
+            override fun originalToTransformed(offset: Int) = originalToTransformed[offset.coerceIn(0, source.length)]
+            override fun transformedToOriginal(offset: Int) = transformedToOriginal[offset.coerceIn(0, grouped.length)]
+        }
+    )
 }
 
 @Composable
@@ -315,6 +366,7 @@ private fun NumberField(label: String, value: String, onValueChange: (String) ->
         onValueChange = onValueChange,
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        visualTransformation = ThinSpaceNumberTransformation,
         singleLine = true,
         modifier = Modifier.fillMaxWidth()
     )
@@ -331,9 +383,9 @@ private fun DailyDetails(days: List<ProfitSimulationDay>) {
                     val transition = if (day.levelForNextDay != day.levelUsed) " → ${day.levelForNextDay}" else ""
                     Text("${day.date} • ${day.levelUsed}${transition}", style = MaterialTheme.typography.titleSmall)
                     Text("Сигналов: ${day.signalCount}")
-                    Text("Доход за сигнал: ${day.incomePerSignal.stripTrailingZeros().toPlainString()} USDT")
-                    Text("Доход за день: ${day.dailyIncome.stripTrailingZeros().toPlainString()} USDT")
-                    Text("Баланс: ${day.balanceAfter.stripTrailingZeros().toPlainString()} USDT")
+                    Text("Доход за сигнал: ${formatNumber(day.incomePerSignal)} USDT")
+                    Text("Доход за день: ${formatNumber(day.dailyIncome)} USDT")
+                    Text("Баланс: ${formatNumber(day.balanceAfter)} USDT")
                 }
             }
         }

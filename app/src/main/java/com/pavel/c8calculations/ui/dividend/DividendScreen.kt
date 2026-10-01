@@ -124,5 +124,11 @@ private fun DividendResultCard(result: DividendResult) {
     }
 }
 
-private fun format(value: BigDecimal): String =
-    value.stripTrailingZeros().toPlainString().replace('.', ',')
+private fun format(value: BigDecimal): String {
+    val plain = value.stripTrailingZeros().toPlainString()
+    val parts = plain.split('.', limit = 2)
+    val sign = if (parts[0].startsWith("-")) "-" else ""
+    val integer = parts[0].removePrefix("-")
+    val grouped = integer.reversed().chunked(3).joinToString("\u202F").reversed()
+    return sign + grouped + if (parts.size == 2) "," + parts[1] else ""
+}
