@@ -27,6 +27,7 @@ struct ProfitCalculatorView: View {
     @AppStorage("profit.leaderSignals") private var leaderSignals = 1
     @AppStorage("profit.vip") private var vip = true
     @AppStorage("profit.l1AtLeast10") private var l1AtLeast10 = false
+    @AppStorage("profit.usdtRubRate") private var usdtRubRateText = "88"
     @State private var result: ResultViewModel?
     @State private var errorText: String?
 
@@ -57,6 +58,7 @@ struct ProfitCalculatorView: View {
                 Stepper("Лидерских сигналов: \(leaderSignals)", value: $leaderSignals, in: 0...20)
                 Toggle("VIP", isOn: $vip)
                 Toggle("L1 ≥ 10", isOn: $l1AtLeast10)
+                TextField("Курс USDT, ₽", text: $usdtRubRateText).keyboardType(.decimalPad)
             }
 
             if mode == .date {
@@ -87,6 +89,9 @@ struct ProfitCalculatorView: View {
                     LabeledContent("Прибыль", value: money(r.gross))
                     LabeledContent("Комиссия 30%", value: money(r.commission))
                     LabeledContent("Чистая прибыль", value: money(r.net))
+                    if let rate = decimal(usdtRubRateText), rate > 0 {
+                        LabeledContent("Чистая прибыль, ₽", value: rubles(r.net * rate))
+                    }
                 }
             }
         }
@@ -126,6 +131,13 @@ struct ProfitCalculatorView: View {
 
     private func decimal(_ text: String) -> Decimal? {
         Decimal(string: text.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private func rubles(_ value: Decimal) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal; f.locale = Locale(identifier: "ru_RU")
+        f.maximumFractionDigits = 2; f.minimumFractionDigits = 0
+        return (f.string(from: value as NSDecimalNumber) ?? "\(value)") + " ₽"
     }
 
     private func money(_ value: Decimal) -> String {
