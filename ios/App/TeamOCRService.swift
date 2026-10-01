@@ -17,7 +17,7 @@ enum TeamOCRService {
                 let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
                 let members = observations.compactMap { observation -> RecognizedTeamMember? in
                     guard let text = observation.topCandidates(1).first?.string,
-                          let level = level(from: text) else { return nil }
+                          let level = TeamLevelTextParser.parse(text) else { return nil }
                     return RecognizedTeamMember(level: level, box: observation.boundingBox)
                 }
                 continuation.resume(returning: members)
@@ -39,13 +39,5 @@ enum TeamOCRService {
         return TeamLayoutAnalyzer.countsExcludingLeader(boxes)
     }
 
-    private static func level(from raw: String) -> ParticipantLevel? {
-        let normalized = raw.uppercased()
-            .replacingOccurrences(of: "С", with: "C")
-            .replacingOccurrences(of: " ", with: "")
-        for level in ParticipantLevel.allCases {
-            if normalized.range(of: "C\\s*\(level.rawValue + 1)", options: .regularExpression) != nil { return level }
-        }
-        return nil
-    }
+
 }
