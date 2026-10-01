@@ -1,21 +1,23 @@
 import SwiftUI
-import PhotosUI
 import C8CalculationsCore
 
 struct TeamStructureView: View {
     @ObservedObject var store: TeamStore
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var recognitionStatus: String?
-    @State private var recognizing = false
+    @State private var image: UIImage?
+    @State private var isRecognizing = false
+    @State private var recognitionMessage: String?
 
     var body: some View {
         Form {
             Section("Распознавание") {
-                PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    Label("Выбрать изображение структуры", systemImage: "photo")
+                TeamImagePicker(image: $image)
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 220)
+                    Button(isRecognizing ? "Распознавание…" : "Распознать структуру") {
+                        recognize()
+                    }.disabled(isRecognizing)
                 }
-                if recognizing { ProgressView("Распознавание…") }
-                if let recognitionStatus { Text(recognitionStatus).font(.footnote) }
+                if let recognitionMessage { Text(recognitionMessage).font(.footnote) }
             }
 
             Section("Участники по уровням") {
@@ -28,32 +30,30 @@ struct TeamStructureView: View {
             Section {
                 LabeledContent("Всего участников", value: "\(store.total)")
             } footer: {
-                Text("После распознавания значения можно исправить вручную. Если в самом левом столбце один распознанный блок, он считается лидером и исключается; если блоков несколько — лидер на изображении не показан.")
+                Text("Если в самом левом столбце один прямоугольник, он считается лидером и исключается. Если слева несколько прямоугольников, лидер на изображении отсутствует. После OCR значения можно исправить вручную.")
             }
         }
         .navigationTitle("Структура команды")
-        .onChange(of: selectedPhoto) { _, item in
-            guard let item else { return }
-            Task { await recognize(item) }
-        }
     }
 
-    @MainActor
-    private func recognize(_ item: PhotosPickerItem) async {
-        recognizing = true; recognitionStatus = nil
-        defer { recognizing = false }
-        do {
-            guard let data = try await item.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data) else {
-                recognitionStatus = "Не удалось открыть изображение"; return
+    private func recognize() {
+        guard let image else { return }
+        isRecognizing = true; recognitionMessage = nil
+        Task {
+            do {
+                let members = try await TeamOCRService.recognize(image: image)
+                let counts = TeamOCRService.counts(from: members)
+                await MainActor.run {
+                    for level in ParticipantLevel.allCases { store.set(level, counts[level, default: 0]) }
+                    recognitionMessage = "Распознано участников: \(counts.values.reduce(0, +))"
+                    isRecognizing = false
+                }
+            } catch {
+                await MainActor.run {
+                    recognitionMessage = "Не удалось распознать изображение"
+                    isRecognizing = false
+                }
             }
-            let result = try await VisionTeamRecognizer.recognize(image)
-            for level in ParticipantLevel.allCases { store.set(level, result.counts[level, default: 0]) }
-            recognitionStatus = result.leaderExcluded
-                ? "Распознано блоков: \(result.recognizedBoxes). Лидер исключён."
-                : "Распознано блоков: \(result.recognizedBoxes). Лидер не исключался."
-        } catch {
-            recognitionStatus = "Ошибка распознавания: \(error.localizedDescription)"
         }
     }
 }
