@@ -5,12 +5,17 @@ final class TeamLevelTextParserTests: XCTestCase {
     func testLatinAndCyrillicC() {
         XCTAssertEqual(TeamLevelTextParser.parse("C4"), .C4)
         XCTAssertEqual(TeamLevelTextParser.parse("С4"), .C4)
+        XCTAssertEqual(TeamLevelTextParser.parse("c4"), .C4)
+        XCTAssertEqual(TeamLevelTextParser.parse("с4"), .C4)
     }
 
     func testWhitespaceAndSeparators() {
         XCTAssertEqual(TeamLevelTextParser.parse(" C 5 "), .C5)
         XCTAssertEqual(TeamLevelTextParser.parse("С-6"), .C6)
         XCTAssertEqual(TeamLevelTextParser.parse("C:3"), .C3)
+        XCTAssertEqual(TeamLevelTextParser.parse("C\u{00A0}4"), .C4)
+        XCTAssertEqual(TeamLevelTextParser.parse("С–2"), .C2)
+        XCTAssertEqual(TeamLevelTextParser.parse("C—1"), .C1)
     }
 
     func testTextAroundLevel() {
