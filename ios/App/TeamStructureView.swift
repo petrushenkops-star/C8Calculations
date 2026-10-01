@@ -17,7 +17,9 @@ struct TeamStructureView: View {
                         recognize()
                     }.disabled(isRecognizing)
                 }
-                if let recognitionMessage { Text(recognitionMessage).font(.footnote) }
+                if let recognitionMessage {
+                    Text(recognitionMessage).font(.footnote)
+                }
             }
 
             Section("Участники по уровням") {
@@ -27,6 +29,7 @@ struct TeamStructureView: View {
                     }
                 }
             }
+
             Section {
                 LabeledContent("Всего участников", value: "\(store.total)")
                 Button("Сбросить структуру", role: .destructive) {
@@ -43,19 +46,34 @@ struct TeamStructureView: View {
 
     private func recognize() {
         guard let image else { return }
-        isRecognizing = true; recognitionMessage = nil
+        isRecognizing = true
+        recognitionMessage = nil
+
         Task {
             do {
                 let members = try await TeamOCRService.recognize(image: image)
                 let counts = TeamOCRService.counts(from: members)
+                let total = counts.values.reduce(0, +)
+
                 await MainActor.run {
-                    for level in ParticipantLevel.allCases { store.set(level, counts[level, default: 0]) }
-                    let details = ParticipantLevel.allCases.map { "\(String(describing: $0)): \(counts[$0, default: 0])" }.joined(separator: " · ")\n                    recognitionMessage = "Распознано: \(counts.values.reduce(0, +))\n\(details)"
+                    guard total > 0 else {
+                        recognitionMessage = "Уровни C1–C6 не распознаны. Сохранённая структура не изменена."
+                        isRecognizing = false
+                        return
+                    }
+
+                    for level in ParticipantLevel.allCases {
+                        store.set(level, counts[level, default: 0])
+                    }
+                    let details = ParticipantLevel.allCases
+                        .map { "\(String(describing: $0)): \(counts[$0, default: 0])" }
+                        .joined(separator: " · ")
+                    recognitionMessage = "Распознано: \(total)\n\(details)"
                     isRecognizing = false
                 }
             } catch {
                 await MainActor.run {
-                    recognitionMessage = "Не удалось распознать изображение"
+                    recognitionMessage = "Не удалось распознать изображение. Сохранённая структура не изменена."
                     isRecognizing = false
                 }
             }
