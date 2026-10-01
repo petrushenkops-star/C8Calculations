@@ -1,19 +1,16 @@
 name: iOS Device Build
 
 on:
-  push:
-    branches: [ios-development]
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-device.yml'
-  pull_request:
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-device.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-device-build
+  cancel-in-progress: true
 
 jobs:
   device-build:
     runs-on: macos-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -46,3 +43,4 @@ jobs:
           name: C8Calculations-iOS-Device-unsigned
           path: C8Calculations-iOS-Device-unsigned.zip
           if-no-files-found: error
+          retention-days: 7
