@@ -31,4 +31,16 @@ jobs:
             -sdk iphonesimulator \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath build \
             build
+      - name: Package Simulator app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            ios/build/Build/Products/Debug-iphonesimulator/C8Calculations.app \
+            C8Calculations-iOS-Simulator.zip
+      - name: Upload Simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: C8Calculations-iOS-Simulator
+          path: C8Calculations-iOS-Simulator.zip
+          if-no-files-found: error
