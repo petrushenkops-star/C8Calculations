@@ -12,6 +12,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.ProfitSimulationEngine
@@ -309,12 +313,51 @@ private fun formatTargetResult(
 }
 
 @Composable
+private val ThinSpaceNumberTransformation = VisualTransformation { text ->
+    val source = text.text
+    val decimalIndex = source.indexOfFirst { it == '.' || it == ',' }.let { if (it < 0) source.length else it }
+    val integerPart = source.substring(0, decimalIndex)
+    val decimalPart = source.substring(decimalIndex)
+    val grouped = integerPart.reversed().chunked(3).joinToString("\u202F").reversed() + decimalPart
+
+    val originalToTransformed = IntArray(source.length + 1)
+    val transformedToOriginal = IntArray(grouped.length + 1)
+    var originalIndex = 0
+    var transformedIndex = 0
+    originalToTransformed[0] = 0
+    while (originalIndex < source.length) {
+        while (transformedIndex < grouped.length && grouped[transformedIndex] == '\u202F') {
+            transformedToOriginal[transformedIndex] = originalIndex
+            transformedIndex++
+        }
+        if (transformedIndex < grouped.length) {
+            transformedToOriginal[transformedIndex] = originalIndex
+            originalIndex++
+            transformedIndex++
+            originalToTransformed[originalIndex] = transformedIndex
+        }
+    }
+    while (transformedIndex <= grouped.length) {
+        transformedToOriginal[transformedIndex] = originalIndex
+        transformedIndex++
+    }
+
+    TransformedText(
+        AnnotatedString(grouped),
+        object : OffsetMapping {
+            override fun originalToTransformed(offset: Int) = originalToTransformed[offset.coerceIn(0, source.length)]
+            override fun transformedToOriginal(offset: Int) = transformedToOriginal[offset.coerceIn(0, grouped.length)]
+        }
+    )
+}
+
 private fun NumberField(label: String, value: String, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        visualTransformation = ThinSpaceNumberTransformation,
         singleLine = true,
         modifier = Modifier.fillMaxWidth()
     )
