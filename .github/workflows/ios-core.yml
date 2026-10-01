@@ -1,0 +1,23 @@
+name: iOS Core
+
+on:
+  push:
+    branches: [ios-development]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-core.yml'
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-core.yml'
+
+jobs:
+  swift-tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Test iOS calculation core
+        working-directory: ios
+        run: swift test
