@@ -131,12 +131,12 @@ fun ProfitScreen(onBack: () -> Unit) {
             dateResultText = buildString {
                 appendLine("Дней: $days")
                 appendLine("Итоговый уровень: ${result.finalLevel}")
-                appendLine("Ожидаемый баланс: ${result.expectedBalance.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Депозит уровня: ${result.currentDeposit.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Прибыль до удержания: ${result.grossProfit.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Комиссия 30%: ${result.withholding.stripTrailingZeros().toPlainString()} USDT")
-                appendLine("Чистая прибыль: ${result.netProfit.stripTrailingZeros().toPlainString()} USDT")
-                append("Чистая прибыль, ₽: ${result.netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
+                appendLine("Ожидаемый баланс: ${formatNumber(result.expectedBalance)} USDT")
+                appendLine("Депозит уровня: ${formatNumber(result.currentDeposit)} USDT")
+                appendLine("Прибыль до удержания: ${formatNumber(result.grossProfit)} USDT")
+                appendLine("Комиссия 30%: ${formatNumber(result.withholding)} USDT")
+                appendLine("Чистая прибыль: ${formatNumber(result.netProfit)} USDT")
+                append("Чистая прибыль, ₽: ${formatNumber(result.netProfit.multiply(rubRate))} ₽")
             }
             errorText = null
         } catch (_: DateTimeParseException) {
@@ -302,14 +302,23 @@ private fun formatTargetResult(
     appendLine("После сигнала: $reachedAfterSignal")
     appendLine("Календарных дней: $daysCount")
     appendLine("Сигналов: $totalSignals")
-    appendLine("Доход за период: ${totalIncome.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Достигнутый баланс: ${reachedBalance.stripTrailingZeros().toPlainString()} USDT")
+    appendLine("Доход за период: ${formatNumber(totalIncome)} USDT")
+    appendLine("Достигнутый баланс: ${formatNumber(reachedBalance)} USDT")
     appendLine("Итоговый уровень: $finalLevel")
-    appendLine("Депозит уровня: ${currentDeposit.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Прибыль до удержания: ${grossProfit.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Комиссия 30%: ${withholding.stripTrailingZeros().toPlainString()} USDT")
-    appendLine("Чистая прибыль: ${netProfit.stripTrailingZeros().toPlainString()} USDT")
-    append("Чистая прибыль, ₽: ${netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
+    appendLine("Депозит уровня: ${formatNumber(currentDeposit)} USDT")
+    appendLine("Прибыль до удержания: ${formatNumber(grossProfit)} USDT")
+    appendLine("Комиссия 30%: ${formatNumber(withholding)} USDT")
+    appendLine("Чистая прибыль: ${formatNumber(netProfit)} USDT")
+    append("Чистая прибыль, ₽: ${formatNumber(netProfit.multiply(rubRate))} ₽")
+}
+
+private fun formatNumber(value: BigDecimal): String {
+    val plain = value.stripTrailingZeros().toPlainString()
+    val parts = plain.split('.', limit = 2)
+    val sign = if (parts[0].startsWith("-")) "-" else ""
+    val integer = parts[0].removePrefix("-")
+    val grouped = integer.reversed().chunked(3).joinToString("\u202F").reversed()
+    return sign + grouped + if (parts.size == 2) "," + parts[1] else ""
 }
 
 private val ThinSpaceNumberTransformation = VisualTransformation { text ->
@@ -374,9 +383,9 @@ private fun DailyDetails(days: List<ProfitSimulationDay>) {
                     val transition = if (day.levelForNextDay != day.levelUsed) " → ${day.levelForNextDay}" else ""
                     Text("${day.date} • ${day.levelUsed}${transition}", style = MaterialTheme.typography.titleSmall)
                     Text("Сигналов: ${day.signalCount}")
-                    Text("Доход за сигнал: ${day.incomePerSignal.stripTrailingZeros().toPlainString()} USDT")
-                    Text("Доход за день: ${day.dailyIncome.stripTrailingZeros().toPlainString()} USDT")
-                    Text("Баланс: ${day.balanceAfter.stripTrailingZeros().toPlainString()} USDT")
+                    Text("Доход за сигнал: ${formatNumber(day.incomePerSignal)} USDT")
+                    Text("Доход за день: ${formatNumber(day.dailyIncome)} USDT")
+                    Text("Баланс: ${formatNumber(day.balanceAfter)} USDT")
                 }
             }
         }
