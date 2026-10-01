@@ -19,25 +19,34 @@ struct ProfitCalculatorView: View {
         let net: Decimal
     }
 
-    @State private var mode: Mode = .date
-    @State private var level: ParticipantLevel = .C5
-    @State private var balanceText = "6000"
-    @State private var targetText = "3000"
+    @AppStorage("profit.mode") private var modeRaw = Mode.date.rawValue
+    @AppStorage("profit.level") private var levelRaw = ParticipantLevel.C5.rawValue
+    @AppStorage("profit.balance") private var balanceText = "6000"
+    @AppStorage("profit.target") private var targetText = "3000"
     @State private var endDate = Date()
-    @State private var leaderSignals = 1
-    @State private var vip = true
-    @State private var l1AtLeast10 = false
+    @AppStorage("profit.leaderSignals") private var leaderSignals = 1
+    @AppStorage("profit.vip") private var vip = true
+    @AppStorage("profit.l1AtLeast10") private var l1AtLeast10 = false
     @State private var result: ResultViewModel?
     @State private var errorText: String?
 
+    private var mode: Mode {
+        get { Mode(rawValue: modeRaw) ?? .date }
+        nonmutating set { modeRaw = newValue.rawValue }
+    }
+    private var level: ParticipantLevel {
+        get { ParticipantLevel(rawValue: levelRaw) ?? .C5 }
+        nonmutating set { levelRaw = newValue.rawValue }
+    }
+
     var body: some View {
         Form {
-            Picker("Режим", selection: $mode) {
+            Picker("Режим", selection: Binding(get: { mode }, set: { mode = $0 })) {
                 ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
             }.pickerStyle(.segmented)
 
             Section("Исходные данные") {
-                Picker("Уровень", selection: $level) {
+                Picker("Уровень", selection: Binding(get: { level }, set: { level = $0 })) {
                     ForEach(ParticipantLevel.allCases, id: \.self) { Text(String(describing: $0)).tag($0) }
                 }
                 TextField("Баланс, USDT", text: $balanceText).keyboardType(.decimalPad)
