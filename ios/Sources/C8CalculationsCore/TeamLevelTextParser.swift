@@ -10,10 +10,12 @@ public enum TeamLevelTextParser {
         for separator in ["-", "_", ":", ".", ","] {
             normalized = normalized.replacingOccurrences(of: separator, with: "")
         }
-        for level in ParticipantLevel.allCases {
-            let token = "C\(level.rawValue + 1)"
-            if normalized.contains(token) { return level }
-        }
-        return nil
+
+        guard let regex = try? NSRegularExpression(pattern: #"C([1-6])(?![0-9])"#) else { return nil }
+        let range = NSRange(normalized.startIndex..<normalized.endIndex, in: normalized)
+        guard let match = regex.firstMatch(in: normalized, range: range),
+              let digitRange = Range(match.range(at: 1), in: normalized),
+              let number = Int(normalized[digitRange]) else { return nil }
+        return ParticipantLevel(rawValue: number - 1)
     }
 }
