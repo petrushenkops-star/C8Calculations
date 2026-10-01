@@ -11,8 +11,8 @@ android {
         applicationId = "com.pavel.c8calculations"
         minSdk = 26
         targetSdk = 37
-        versionCode = 101
-        versionName = "1.0.0"
+        versionCode = 102
+        versionName = "1.1.0"
     }
 
     signingConfigs {
