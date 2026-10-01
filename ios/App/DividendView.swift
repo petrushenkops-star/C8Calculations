@@ -15,6 +15,9 @@ struct DividendView: View {
                 ForEach(ParticipantLevel.allCases, id: \.self) { level in
                     LabeledContent(String(describing: level), value: "\(store.count(level))")
                 }
+                NavigationLink("Изменить структуру команды") {
+                    TeamStructureView(store: store)
+                }
             }
             Section {
                 Button("Рассчитать дивиденды") {
@@ -31,6 +34,8 @@ struct DividendView: View {
             }
         }
         .navigationTitle("Дивиденды")
+        .onChange(of: days) { _, _ in result = nil }
+        .onChange(of: store.counts) { _, _ in result = nil }
     }
 
     private func money(_ value: Decimal) -> String {
