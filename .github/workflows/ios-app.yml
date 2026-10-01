@@ -1,19 +1,16 @@
 name: iOS App Build
 
 on:
-  push:
-    branches: [ios-development]
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-app.yml'
-  pull_request:
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-app.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-app-build
+  cancel-in-progress: true
 
 jobs:
   simulator-build:
     runs-on: macos-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -45,3 +42,4 @@ jobs:
           name: C8Calculations-iOS-Simulator
           path: C8Calculations-iOS-Simulator.zip
           if-no-files-found: error
+          retention-days: 7
