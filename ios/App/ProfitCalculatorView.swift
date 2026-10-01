@@ -146,17 +146,23 @@ struct ProfitCalculatorView: View {
         Decimal(string: text.replacingOccurrences(of: ",", with: "."))
     }
 
-    private func rubles(_ value: Decimal) -> String {
+    private func formattedNumber(_ value: Decimal) -> String {
         let f = NumberFormatter()
-        f.numberStyle = .decimal; f.locale = Locale(identifier: "ru_RU")
-        f.maximumFractionDigits = 2; f.minimumFractionDigits = 0
-        return (f.string(from: value as NSDecimalNumber) ?? "\(value)") + " ₽"
+        f.numberStyle = .decimal
+        f.locale = Locale(identifier: "ru_RU")
+        f.usesGroupingSeparator = true
+        f.groupingSeparator = "\u{202F}"
+        f.decimalSeparator = ","
+        f.maximumFractionDigits = 2
+        f.minimumFractionDigits = 0
+        return f.string(from: value as NSDecimalNumber) ?? "\(value)"
+    }
+
+    private func rubles(_ value: Decimal) -> String {
+        formattedNumber(value) + " ₽"
     }
 
     private func money(_ value: Decimal) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal; f.locale = Locale(identifier: "ru_RU")
-        f.maximumFractionDigits = 2; f.minimumFractionDigits = 0
-        return (f.string(from: value as NSDecimalNumber) ?? "\(value)") + " USDT"
+        formattedNumber(value) + " USDT"
     }
 }
