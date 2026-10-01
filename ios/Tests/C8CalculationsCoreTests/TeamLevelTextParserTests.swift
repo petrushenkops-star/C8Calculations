@@ -20,6 +20,8 @@ final class TeamLevelTextParserTests: XCTestCase {
 
     func testInvalidText() {
         XCTAssertNil(TeamLevelTextParser.parse("C7"))
+        XCTAssertNil(TeamLevelTextParser.parse("C10"))
+        XCTAssertNil(TeamLevelTextParser.parse("С60"))
         XCTAssertNil(TeamLevelTextParser.parse("LEVEL"))
     }
 }
