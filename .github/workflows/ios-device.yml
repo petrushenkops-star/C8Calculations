@@ -34,3 +34,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -derivedDataPath device-build \
             build
+      - name: Package unsigned device app
+        run: |
+          APP_PATH="$(find ios/device-build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+          echo "Packaging $APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" C8Calculations-iOS-Device-unsigned.zip
+      - name: Upload unsigned device app
+        uses: actions/upload-artifact@v4
+        with:
+          name: C8Calculations-iOS-Device-unsigned
+          path: C8Calculations-iOS-Device-unsigned.zip
+          if-no-files-found: error
