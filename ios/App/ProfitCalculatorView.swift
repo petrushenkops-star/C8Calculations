@@ -47,7 +47,7 @@ struct ProfitCalculatorView: View {
 
     var body: some View {
         Form {
-            Picker("Режим", selection: Binding(get: { mode }, set: { mode = $0 })) {
+            Picker("Режим", selection: Binding(get: { mode }, set: { newMode in\n                mode = newMode\n                result = nil\n                errorText = nil\n            })) {
                 ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
             }.pickerStyle(.segmented)
 
