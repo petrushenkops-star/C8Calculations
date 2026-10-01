@@ -50,7 +50,7 @@ struct TeamStructureView: View {
                 let counts = TeamOCRService.counts(from: members)
                 await MainActor.run {
                     for level in ParticipantLevel.allCases { store.set(level, counts[level, default: 0]) }
-                    recognitionMessage = "Распознано участников: \(counts.values.reduce(0, +))"
+                    let details = ParticipantLevel.allCases.map { "\(String(describing: $0)): \(counts[$0, default: 0])" }.joined(separator: " · ")\n                    recognitionMessage = "Распознано: \(counts.values.reduce(0, +))\n\(details)"
                     isRecognizing = false
                 }
             } catch {
