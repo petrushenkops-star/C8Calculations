@@ -1,5 +1,5 @@
 import Foundation
-import Vision
+@preconcurrency import Vision
 import UIKit
 import C8CalculationsCore
 
