@@ -1,5 +1,5 @@
 import UIKit
-import Vision
+@preconcurrency import Vision
 import C8CalculationsCore
 
 enum VisionTeamRecognizer {
@@ -18,7 +18,8 @@ enum VisionTeamRecognizer {
             request.recognitionLevel = .accurate
             request.recognitionLanguages = ["ru-RU", "en-US"]
             request.usesLanguageCorrection = false
-            VNImageRequestHandler(cgImage: cgImage, orientation: .up).perform([request])
+            do { try VNImageRequestHandler(cgImage: cgImage, orientation: .up).perform([request]) }
+            catch { continuation.resume(throwing: error) }
         }
     }
 
