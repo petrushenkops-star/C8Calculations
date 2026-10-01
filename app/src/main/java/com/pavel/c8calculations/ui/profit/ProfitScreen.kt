@@ -312,7 +312,6 @@ private fun formatTargetResult(
     append("Чистая прибыль, ₽: ${netProfit.multiply(rubRate).stripTrailingZeros().toPlainString()} ₽")
 }
 
-@Composable
 private val ThinSpaceNumberTransformation = VisualTransformation { text ->
     val source = text.text
     val decimalIndex = source.indexOfFirst { it == '.' || it == ',' }.let { if (it < 0) source.length else it }
@@ -351,6 +350,7 @@ private val ThinSpaceNumberTransformation = VisualTransformation { text ->
     )
 }
 
+@Composable
 private fun NumberField(label: String, value: String, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
