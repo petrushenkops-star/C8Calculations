@@ -23,7 +23,7 @@ struct ProfitCalculatorView: View {
     @AppStorage("profit.level") private var levelRaw = ParticipantLevel.C5.rawValue
     @AppStorage("profit.balance") private var balanceText = "6000"
     @AppStorage("profit.target") private var targetText = "3000"
-    @State private var endDate = Date()
+    @AppStorage("profit.endDate") private var endDateTimestamp = Date().timeIntervalSince1970
     @AppStorage("profit.leaderSignals") private var leaderSignals = 1
     @AppStorage("profit.vip") private var vip = true
     @AppStorage("profit.l1AtLeast10") private var l1AtLeast10 = false
@@ -37,6 +37,10 @@ struct ProfitCalculatorView: View {
     private var level: ParticipantLevel {
         get { ParticipantLevel(rawValue: levelRaw) ?? .C5 }
         nonmutating set { levelRaw = newValue.rawValue }
+    }
+    private var endDate: Date {
+        get { Date(timeIntervalSince1970: endDateTimestamp) }
+        nonmutating set { endDateTimestamp = newValue.timeIntervalSince1970 }
     }
 
     var body: some View {
@@ -57,7 +61,7 @@ struct ProfitCalculatorView: View {
 
             if mode == .date {
                 Section("Дата расчёта") {
-                    DatePicker("До даты", selection: $endDate, displayedComponents: .date)
+                    DatePicker("До даты", selection: Binding(get: { endDate }, set: { endDate = $0 }), displayedComponents: .date)
                 }
             } else {
                 Section(mode == .balance ? "Целевой баланс" : "Желаемая чистая прибыль") {
