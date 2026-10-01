@@ -29,6 +29,11 @@ struct TeamStructureView: View {
             }
             Section {
                 LabeledContent("Всего участников", value: "\(store.total)")
+                Button("Сбросить структуру", role: .destructive) {
+                    for level in ParticipantLevel.allCases { store.set(level, 0) }
+                    recognitionMessage = nil
+                    image = nil
+                }
             } footer: {
                 Text("Если в самом левом столбце один прямоугольник, он считается лидером и исключается. Если слева несколько прямоугольников, лидер на изображении отсутствует. После OCR значения можно исправить вручную.")
             }
