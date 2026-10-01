@@ -39,4 +39,20 @@ final class TargetCalculationTests: XCTestCase {
         XCTAssertEqual(result.reachedAfterSignal, 5)
         XCTAssertEqual(result.reachedBalance, 6240)
     }
+    func testDateModeProcessesWholeFinalDayUnlikeTargetMode() {
+        let result = ProfitCalculator.simulate(
+            startDate: date("2026-09-30"),
+            endDate: date("2026-10-29"),
+            startingLevel: .C5,
+            startingBalance: 6000,
+            x: 1,
+            isVip: true,
+            l1Count: 0,
+            calendar: utcCalendar
+        )
+        XCTAssertEqual(result.expectedBalance, 14512)
+        XCTAssertEqual(result.finalLevel, .C6)
+        XCTAssertEqual(result.currentDeposit, 10000)
+    }
 }
+
