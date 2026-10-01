@@ -11,7 +11,7 @@ enum VisionTeamRecognizer {
                 let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
                 let boxes = observations.compactMap { observation -> RecognizedTeamBox? in
                     guard let candidate = observation.topCandidates(1).first else { return nil }
-                    return .init(text: candidate.string, minX: observation.boundingBox.minX, midY: observation.boundingBox.midY)
+                    return .init(\n                        text: candidate.string,\n                        minX: observation.boundingBox.minX,\n                        midY: observation.boundingBox.midY,\n                        width: observation.boundingBox.width\n                    )
                 }
                 continuation.resume(returning: TeamStructureAnalyzer.analyze(boxes))
             }
