@@ -3,7 +3,7 @@ import C8CalculationsCore
 
 struct DividendView: View {
     @ObservedObject var store: TeamStore
-    @State private var days = 10
+    @AppStorage("dividend.days") private var days = 10
     @State private var result: DividendResult?
 
     var body: some View {
@@ -35,7 +35,13 @@ struct DividendView: View {
 
     private func money(_ value: Decimal) -> String {
         let f = NumberFormatter()
-        f.numberStyle = .decimal; f.locale = Locale(identifier: "ru_RU"); f.maximumFractionDigits = 2
+        f.numberStyle = .decimal
+        f.locale = Locale(identifier: "ru_RU")
+        f.usesGroupingSeparator = true
+        f.groupingSeparator = "\u{202F}"
+        f.decimalSeparator = ","
+        f.maximumFractionDigits = 2
+        f.minimumFractionDigits = 0
         return (f.string(from: value as NSDecimalNumber) ?? "\(value)") + " USDT"
     }
 }
