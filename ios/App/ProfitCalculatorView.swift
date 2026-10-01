@@ -17,6 +17,7 @@ struct ProfitCalculatorView: View {
         let gross: Decimal
         let commission: Decimal
         let net: Decimal
+        let dayDetails: [ProfitSimulationDay]
     }
 
     @AppStorage("profit.mode") private var modeRaw = Mode.date.rawValue
@@ -93,6 +94,18 @@ struct ProfitCalculatorView: View {
                         LabeledContent("Чистая прибыль, ₽", value: rubles(r.net * rate))
                     }
                 }
+                if !r.dayDetails.isEmpty {
+                    Section("Отчёт по дням") {
+                        ForEach(Array(r.dayDetails.enumerated()), id: \.offset) { _, day in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(day.date.formatted(date: .numeric, time: .omitted)).font(.headline)
+                                Text("\(String(describing: day.levelUsed)) · сигналов: \(day.signalCount) · доход: \(money(day.dailyIncome))")
+                                Text("Баланс: \(money(day.balanceAfter)) · следующий уровень: \(String(describing: day.levelForNextDay))")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
             }
         }
         .navigationTitle("Расчёт прибыли")
@@ -112,7 +125,7 @@ struct ProfitCalculatorView: View {
             guard end >= start else { errorText = "Дата не может быть раньше сегодняшней"; return }
             let days = (calendar.dateComponents([.day], from: start, to: end).day ?? 0) + 1
             let r = ProfitSimulationEngine.simulate(startDate: start, numberOfDays: days, startingLevel: level, startingBalance: balance, x: leaderSignals, isVip: vip, l1Count: l1AtLeast10 ? 10 : 0, calendar: calendar)
-            result = .init(date: end, days: days, signals: r.days.reduce(0) { $0 + $1.signalCount }, balance: r.expectedBalance, level: r.finalLevel, deposit: r.currentDeposit, gross: r.grossProfit, commission: r.withholding, net: r.netProfit)
+            result = .init(date: end, days: days, signals: r.days.reduce(0) { $0 + $1.signalCount }, balance: r.expectedBalance, level: r.finalLevel, deposit: r.currentDeposit, gross: r.grossProfit, commission: r.withholding, net: r.netProfit, dayDetails: r.days)
         case .balance, .net:
             guard let target = decimal(targetText), target >= 0 else { errorText = "Введите корректную цель"; return }
             if mode == .balance {
@@ -126,7 +139,7 @@ struct ProfitCalculatorView: View {
     }
 
     private func map(_ r: TargetCalculationResult) -> ResultViewModel {
-        .init(date: r.reachedDate, days: r.daysCount, signals: r.totalSignals, balance: r.reachedBalance, level: r.finalLevel, deposit: r.currentDeposit, gross: r.grossProfit, commission: r.withholding, net: r.netProfit)
+        .init(date: r.reachedDate, days: r.daysCount, signals: r.totalSignals, balance: r.reachedBalance, level: r.finalLevel, deposit: r.currentDeposit, gross: r.grossProfit, commission: r.withholding, net: r.netProfit, dayDetails: r.days)
     }
 
     private func decimal(_ text: String) -> Decimal? {
