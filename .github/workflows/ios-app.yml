@@ -35,9 +35,10 @@ jobs:
             build
       - name: Package Simulator app
         run: |
-          ditto -c -k --sequesterRsrc --keepParent \
-            ios/build/Build/Products/Debug-iphonesimulator/C8Calculations.app \
-            C8Calculations-iOS-Simulator.zip
+          APP_PATH="$(find ios/build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+          echo "Packaging $APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" C8Calculations-iOS-Simulator.zip
       - name: Upload Simulator app
         uses: actions/upload-artifact@v4
         with:
