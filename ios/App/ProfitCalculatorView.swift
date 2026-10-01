@@ -109,6 +109,18 @@ struct ProfitCalculatorView: View {
             }
         }
         .navigationTitle("Расчёт прибыли")
+        .onChange(of: levelRaw) { _, _ in invalidateResult() }
+        .onChange(of: balanceText) { _, _ in invalidateResult() }
+        .onChange(of: targetText) { _, _ in invalidateResult() }
+        .onChange(of: endDateTimestamp) { _, _ in invalidateResult() }
+        .onChange(of: leaderSignals) { _, _ in invalidateResult() }
+        .onChange(of: vip) { _, _ in invalidateResult() }
+        .onChange(of: l1AtLeast10) { _, _ in invalidateResult() }
+    }
+
+    private func invalidateResult() {
+        result = nil
+        errorText = nil
     }
 
     private func calculate() {
