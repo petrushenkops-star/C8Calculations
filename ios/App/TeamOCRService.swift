@@ -43,11 +43,20 @@ enum TeamOCRService {
         }
     }
 
-    static func counts(from members: [RecognizedTeamMember]) -> [ParticipantLevel: Int] {
+    static func analyze(_ members: [RecognizedTeamMember]) -> TeamRecognitionResult {
         let boxes = members.map {
-            TeamMemberBox(level: $0.level, midX: Double($0.box.midX), width: Double($0.box.width))
+            RecognizedTeamBox(
+                text: String(describing: $0.level),
+                minX: Double($0.box.minX),
+                midY: Double($0.box.midY),
+                width: Double($0.box.width)
+            )
         }
-        return TeamLayoutAnalyzer.countsExcludingLeader(boxes)
+        return TeamStructureAnalyzer.analyze(boxes)
+    }
+
+    static func counts(from members: [RecognizedTeamMember]) -> [ParticipantLevel: Int] {
+        analyze(members).counts
     }
 
     private static func cgImageOrientation(from orientation: UIImage.Orientation) -> CGImagePropertyOrientation {
