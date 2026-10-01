@@ -1,24 +1,18 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var teamStore = TeamStore()
+
     var body: some View {
         NavigationStack {
             List {
                 Section("Расчёты") {
                     NavigationLink("Расчёт прибыли") { ProfitCalculatorView() }
-                    NavigationLink("Структура команды") { PlaceholderView(title: "Структура команды") }
-                    NavigationLink("Дивиденды") { PlaceholderView(title: "Дивиденды") }
+                    NavigationLink("Структура команды") { TeamStructureView(store: teamStore) }
+                    NavigationLink("Дивиденды") { DividendView(store: teamStore) }
                 }
             }
             .navigationTitle("С8 расчеты")
         }
-    }
-}
-
-private struct PlaceholderView: View {
-    let title: String
-    var body: some View {
-        ContentUnavailableView(title, systemImage: "hammer", description: Text("Модуль переносится из Android-версии"))
-            .navigationTitle(title)
     }
 }
