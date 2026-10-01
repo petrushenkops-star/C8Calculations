@@ -52,7 +52,8 @@ struct TeamStructureView: View {
         Task {
             do {
                 let members = try await TeamOCRService.recognize(image: image)
-                let counts = TeamOCRService.counts(from: members)
+                let analysis = TeamOCRService.analyze(members)
+                let counts = analysis.counts
                 let total = counts.values.reduce(0, +)
 
                 await MainActor.run {
@@ -68,7 +69,10 @@ struct TeamStructureView: View {
                     let details = ParticipantLevel.allCases
                         .map { "\(String(describing: $0)): \(counts[$0, default: 0])" }
                         .joined(separator: " · ")
-                    recognitionMessage = "Распознано: \(total)\n\(details)"
+                    let leaderStatus = analysis.leaderExcluded
+                        ? "Лидер в левом столбце найден и исключён."
+                        : "Лидер не исключался: в левом столбце нет единственного участника."
+                    recognitionMessage = "Распознано участников: \(total)\n\(leaderStatus)\n\(details)"
                     isRecognizing = false
                 }
             } catch {
