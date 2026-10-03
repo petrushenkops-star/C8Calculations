@@ -38,7 +38,11 @@ object TeamLevelRecognizer {
     private val digitPattern = Pattern.compile("[0-6]")
     private const val COLUMN_TOLERANCE_PX = 45
 
-    fun recognize(source: Bitmap, onResult: (TeamRecognitionResult?) -> Unit) {
+    fun recognize(
+        source: Bitmap,
+        extractParticipantDetails: Boolean = false,
+        onResult: (TeamRecognitionResult?) -> Unit,
+    ) {
         val matches = mutableListOf<LevelMatch>()
         val fragments = mutableListOf<TextFragment>()
         val scaledWidth = min(source.width * 2, 3000)
@@ -53,12 +57,16 @@ object TeamLevelRecognizer {
         passes.forEach { pass ->
             recognizer.process(InputImage.fromBitmap(pass.bitmap, 0))
                 .addOnSuccessListener { text ->
-                    synchronized(lock) { collect(text, pass.scale, matches, fragments) }
+                    synchronized(lock) {
+                        collect(text, pass.scale, matches, fragments, extractParticipantDetails)
+                    }
                 }
                 .addOnCompleteListener {
                     if (remaining.decrementAndGet() == 0) {
                         recognizer.close()
-                        val result = synchronized(lock) { buildResult(matches, fragments) }
+                        val result = synchronized(lock) {
+                            buildResult(matches, fragments, extractParticipantDetails)
+                        }
                         onResult(result)
                     }
                 }
@@ -70,9 +78,12 @@ object TeamLevelRecognizer {
         scale: Float,
         matches: MutableList<LevelMatch>,
         fragments: MutableList<TextFragment>,
+        extractParticipantDetails: Boolean,
     ) {
         text.textBlocks.forEach { block -> block.lines.forEach { line ->
-            line.boundingBox?.let { addFragment(line.text, it, scale, fragments) }
+            if (extractParticipantDetails) {
+                line.boundingBox?.let { addFragment(line.text, it, scale, fragments) }
+            }
 
             val elements = line.elements
             var levelFoundInElements = false
@@ -153,7 +164,11 @@ object TeamLevelRecognizer {
         return result
     }
 
-    private fun buildResult(raw: List<LevelMatch>, fragments: List<TextFragment>): TeamRecognitionResult? {
+    private fun buildResult(
+        raw: List<LevelMatch>,
+        fragments: List<TextFragment>,
+        extractParticipantDetails: Boolean,
+    ): TeamRecognitionResult? {
         if (raw.isEmpty()) return null
         val matches = raw.sortedWith(compareBy<LevelMatch> { it.x }.thenBy { it.y })
         val columns = groupIntoColumns(matches)
@@ -170,8 +185,12 @@ object TeamLevelRecognizer {
             columns.forEachIndexed { columnIndex, column ->
                 column.sortedBy { it.y }.forEach { match ->
                     val depth = if (leader != null) columnIndex else null
-                    val cardText = textForCard(match, column, columnIndex, columns, fragments)
-                    val fields = ParticipantTextExtractor.extract(cardText)
+                    val fields = if (extractParticipantDetails) {
+                        val cardText = textForCard(match, column, columnIndex, columns, fragments)
+                        ParticipantTextExtractor.extract(cardText)
+                    } else {
+                        ParticipantFields()
+                    }
                     add(
                         TeamDetectedCard(
                             level = match.level,
