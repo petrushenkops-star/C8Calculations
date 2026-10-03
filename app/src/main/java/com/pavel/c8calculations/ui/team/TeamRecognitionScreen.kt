@@ -1,14 +1,12 @@
 package com.pavel.c8calculations.ui.team
 
-import android.provider.MediaStore
+import android.content.SharedPreferences
 import android.net.Uri
-import com.pavel.c8calculations.recognition.PdfTeamImporter
-import com.pavel.c8calculations.recognition.TeamRecognitionResult
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,7 +19,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.pavel.c8calculations.recognition.PdfTeamImporter
+import com.pavel.c8calculations.recognition.TeamDetectedCard
 import com.pavel.c8calculations.recognition.TeamLevelRecognizer
+import com.pavel.c8calculations.recognition.TeamRecognitionResult
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+import java.time.LocalDate
+
+enum class TeamSortField { LEVEL, NAME, UID, DATE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +42,9 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     var counts by remember {
         mutableStateOf((1..6).map { preferences.getInt("c$it", 0).toString() })
     }
+    var participants by remember { mutableStateOf(loadParticipants(preferences)) }
+    var sortField by remember { mutableStateOf(TeamSortField.LEVEL) }
+    var sortAscending by remember { mutableStateOf(true) }
     var statusText by remember { mutableStateOf<String?>(null) }
     var leaderExcluded by remember {
         mutableStateOf(if (preferences.contains("leaderExcluded")) preferences.getBoolean("leaderExcluded", false) else null)
@@ -52,9 +63,13 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
             leaderExcluded = false
             statusText = "$source: лидер не определён автоматически. Прежние значения сохранены; проверьте структуру вручную."
         } else {
+            val recognizedParticipants = result.cards.filter {
+                !it.excludedAsLeader && it.depth in 1..3 && it.level in 2..6
+            }
             counts = (1..6).map { result.counts[it].toString() }
+            participants = recognizedParticipants
             leaderExcluded = true
-            statusText = "$source: найдено карточек — ${result.detectedCards}. Учтены только L1, L2 и L3. Проверьте состав команды."
+            statusText = "$source: найдено карточек — ${result.detectedCards}. В список команды включено ${recognizedParticipants.size} участников из L1–L3."
         }
     }
 
@@ -150,7 +165,14 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         editor.apply()
     }
 
+    LaunchedEffect(participants) {
+        preferences.edit().putString("participants", encodeParticipants(participants)).apply()
+    }
+
     val totalParticipants = counts.drop(1).sumOf { it.toIntOrNull()?.coerceAtLeast(0) ?: 0 }
+    val sortedParticipants = remember(participants, sortField, sortAscending) {
+        sortParticipants(participants, sortField, sortAscending)
+    }
 
     Scaffold(
         topBar = {
@@ -167,7 +189,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         ) {
             Text("Состав команды", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Загрузите изображение или PDF со структурой команды. В состав входят только участники из L1, L2 и L3. Лидер, C0 и C1 не учитываются.",
+                "Загрузите изображение или PDF со структурой команды. Карточка участника: уровень, имя, UID и дата. В состав входят только L1–L3; лидер, C0 и C1 не учитываются.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -242,13 +264,68 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                             )
                         }
                         Text("Учитываются только L1–L3; лидер, C0 и C1 в состав команды не входят")
+                    }
+                }
+            }
 
+            if (participants.isNotEmpty()) {
+                HorizontalDivider()
+                Text("Список участников команды", style = MaterialTheme.typography.titleLarge)
+                Text("${participants.size} участников. Нажмите на поле сортировки повторно, чтобы изменить направление.")
+
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SortChip("Уровень", TeamSortField.LEVEL, sortField, sortAscending) { selected ->
+                        if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
+                    }
+                    SortChip("Имя", TeamSortField.NAME, sortField, sortAscending) { selected ->
+                        if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
+                    }
+                    SortChip("UID", TeamSortField.UID, sortField, sortAscending) { selected ->
+                        if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
+                    }
+                    SortChip("Дата", TeamSortField.DATE, sortField, sortAscending) { selected ->
+                        if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
                     }
                 }
 
+                sortedParticipants.forEachIndexed { index, participant ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(
+                            Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                "${index + 1}. C${participant.level}  •  L${participant.depth ?: "—"}",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text("Имя: ${participant.name.ifBlank { "—" }}")
+                            Text("UID: ${participant.uid.ifBlank { "—" }}")
+                            Text("Дата: ${participant.date.ifBlank { "—" }}")
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun SortChip(
+    label: String,
+    field: TeamSortField,
+    selectedField: TeamSortField,
+    ascending: Boolean,
+    onClick: (TeamSortField) -> Unit,
+) {
+    val selected = field == selectedField
+    FilterChip(
+        selected = selected,
+        onClick = { onClick(field) },
+        label = { Text(if (selected) "$label ${if (ascending) "↑" else "↓"}" else label) },
+    )
 }
 
 @Composable
@@ -263,4 +340,68 @@ private fun TeamCountField(label: String, value: String, onValueChange: (String)
         singleLine = true,
         modifier = modifier
     )
+}
+
+private fun sortParticipants(
+    participants: List<TeamDetectedCard>,
+    field: TeamSortField,
+    ascending: Boolean,
+): List<TeamDetectedCard> {
+    val comparator = when (field) {
+        TeamSortField.LEVEL -> compareBy<TeamDetectedCard> { it.level }.thenBy { it.name.lowercase() }
+        TeamSortField.NAME -> compareBy<TeamDetectedCard> { it.name.isBlank() }.thenBy { it.name.lowercase() }
+        TeamSortField.UID -> compareBy<TeamDetectedCard> { it.uid.isBlank() }.thenBy { it.uid.padStart(20, '0') }
+        TeamSortField.DATE -> compareBy<TeamDetectedCard> { dateSortKey(it.date) }.thenBy { it.name.lowercase() }
+    }
+    return participants.sortedWith(if (ascending) comparator else comparator.reversed())
+}
+
+private fun dateSortKey(value: String): Long {
+    val parts = value.trim().split(Regex("[./-]"))
+    if (parts.size != 3) return Long.MAX_VALUE
+    return runCatching {
+        val day = parts[0].toInt()
+        val month = parts[1].toInt()
+        val rawYear = parts[2].toInt()
+        val year = if (rawYear < 100) 2000 + rawYear else rawYear
+        LocalDate.of(year, month, day).toEpochDay()
+    }.getOrDefault(Long.MAX_VALUE)
+}
+
+private fun encodeParticipants(participants: List<TeamDetectedCard>): String {
+    val array = JSONArray()
+    participants.forEach { participant ->
+        array.put(JSONObject().apply {
+            put("level", participant.level)
+            put("depth", participant.depth ?: JSONObject.NULL)
+            put("name", participant.name)
+            put("uid", participant.uid)
+            put("date", participant.date)
+        })
+    }
+    return array.toString()
+}
+
+private fun loadParticipants(preferences: SharedPreferences): List<TeamDetectedCard> {
+    val raw = preferences.getString("participants", null) ?: return emptyList()
+    return runCatching {
+        val array = JSONArray(raw)
+        buildList {
+            for (index in 0 until array.length()) {
+                val item = array.getJSONObject(index)
+                add(
+                    TeamDetectedCard(
+                        level = item.optInt("level", 0),
+                        x = 0,
+                        y = 0,
+                        excludedAsLeader = false,
+                        depth = if (item.isNull("depth")) null else item.optInt("depth"),
+                        name = item.optString("name"),
+                        uid = item.optString("uid"),
+                        date = item.optString("date"),
+                    )
+                )
+            }
+        }
+    }.getOrDefault(emptyList())
 }
