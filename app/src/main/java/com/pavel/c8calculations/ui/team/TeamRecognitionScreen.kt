@@ -42,7 +42,12 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     var counts by remember {
         mutableStateOf((1..6).map { preferences.getInt("c$it", 0).toString() })
     }
-    var participants by remember { mutableStateOf(loadParticipants(preferences)) }
+    var participantListFromPdf by remember {
+        mutableStateOf(preferences.getBoolean("participants_from_pdf", false))
+    }
+    var participants by remember {
+        mutableStateOf(if (participantListFromPdf) loadParticipants(preferences) else emptyList())
+    }
     var sortField by remember { mutableStateOf(TeamSortField.LEVEL) }
     var sortAscending by remember { mutableStateOf(true) }
     var statusText by remember { mutableStateOf<String?>(null) }
@@ -55,7 +60,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     var pdfPageCount by remember { mutableStateOf(0) }
     var pageInput by remember { mutableStateOf("1") }
 
-    fun applyResult(result: TeamRecognitionResult?, source: String) {
+    fun applyResult(result: TeamRecognitionResult?, source: String, includeParticipantList: Boolean) {
         recognizing = false
         if (result == null) {
             statusText = "$source: не удалось распознать уровни C0–C6. Прежние значения сохранены; их можно исправить вручную."
@@ -63,13 +68,20 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
             leaderExcluded = false
             statusText = "$source: лидер не определён автоматически. Прежние значения сохранены; проверьте структуру вручную."
         } else {
-            val recognizedParticipants = result.cards.filter {
-                !it.excludedAsLeader && (it.depth?.let { depth -> depth in 1..3 } == true) && it.level in 2..6
-            }
             counts = (1..6).map { result.counts[it].toString() }
-            participants = recognizedParticipants
             leaderExcluded = true
-            statusText = "$source: найдено карточек — ${result.detectedCards}. В список команды включено ${recognizedParticipants.size} участников из L1–L3."
+            if (includeParticipantList) {
+                val recognizedParticipants = result.cards.filter {
+                    !it.excludedAsLeader && (it.depth?.let { depth -> depth in 1..3 } == true) && it.level in 2..6
+                }
+                participants = recognizedParticipants
+                participantListFromPdf = true
+                statusText = "$source: найдено карточек — ${result.detectedCards}. В список команды включено ${recognizedParticipants.size} участников из L1–L3."
+            } else {
+                participants = emptyList()
+                participantListFromPdf = false
+                statusText = "$source: найдено карточек — ${result.detectedCards}. Учтены только L1, L2 и L3."
+            }
         }
     }
 
@@ -90,10 +102,12 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     selectedBitmap = bitmap
                     val source = "PDF, страница ${loaded.pageNumber} из ${loaded.pageCount}"
                     if (loaded.textResult != null) {
-                        applyResult(loaded.textResult, source)
+                        applyResult(loaded.textResult, source, includeParticipantList = true)
                     } else {
-                        statusText = "$source: распознавание изображения…"
-                        TeamLevelRecognizer.recognize(bitmap) { result -> applyResult(result, source) }
+                        statusText = "$source: распознавание изображения страницы…"
+                        TeamLevelRecognizer.recognize(bitmap, extractParticipantDetails = true) { result ->
+                            applyResult(result, source, includeParticipantList = true)
+                        }
                     }
                 }
             } catch (error: CancellationException) {
@@ -141,6 +155,9 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
+            // Participant details are intentionally a PDF-only feature.
+            participants = emptyList()
+            participantListFromPdf = false
             runCatching { MediaStore.Images.Media.getBitmap(context.contentResolver, uri) }
                 .onSuccess { bitmap ->
                     selectedBitmap = bitmap
@@ -148,7 +165,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     statusText = "Распознавание..."
                     leaderExcluded = null
                     TeamLevelRecognizer.recognize(bitmap) { result ->
-                        applyResult(result, "Изображение")
+                        applyResult(result, "Изображение", includeParticipantList = false)
                     }
                 }
                 .onFailure {
@@ -165,8 +182,14 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         editor.apply()
     }
 
-    LaunchedEffect(participants) {
-        preferences.edit().putString("participants", encodeParticipants(participants)).apply()
+    LaunchedEffect(participants, participantListFromPdf) {
+        val editor = preferences.edit().putBoolean("participants_from_pdf", participantListFromPdf)
+        if (participantListFromPdf) {
+            editor.putString("participants", encodeParticipants(participants))
+        } else {
+            editor.remove("participants")
+        }
+        editor.apply()
     }
 
     val totalParticipants = counts.drop(1).sumOf { it.toIntOrNull()?.coerceAtLeast(0) ?: 0 }
@@ -189,7 +212,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         ) {
             Text("Состав команды", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Загрузите изображение или PDF со структурой команды. Карточка участника: уровень, имя, UID и дата. В состав входят только L1–L3; лидер, C0 и C1 не учитываются.",
+                "Загрузите изображение или PDF со структурой команды. В состав входят только L1–L3; лидер, C0 и C1 не учитываются. Для PDF дополнительно распознаются уровень, имя, UID и дата каждой карточки.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -268,10 +291,10 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 }
             }
 
-            if (participants.isNotEmpty()) {
+            if (participantListFromPdf && participants.isNotEmpty()) {
                 HorizontalDivider()
                 Text("Список участников команды", style = MaterialTheme.typography.titleLarge)
-                Text("${participants.size} участников. Нажмите на поле сортировки повторно, чтобы изменить направление.")
+                Text("${participants.size} участников из PDF. Нажмите на поле сортировки повторно, чтобы изменить направление.")
 
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
