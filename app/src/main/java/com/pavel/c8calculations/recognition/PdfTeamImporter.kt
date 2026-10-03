@@ -77,13 +77,29 @@ object PdfTeamImporter {
                     PDFBoxResourceLoader.init(context.applicationContext)
                     PDDocument.load(file, MemoryUsageSetting.setupTempFileOnly()).use { document ->
                         val labels = mutableListOf<PdfLevelLabel>()
+                        val fragments = mutableListOf<PdfTextFragment>()
                         val stripper = object : PDFTextStripper() {
                             val characters = StringBuilder()
                             val positions = mutableListOf<TextPosition?>()
 
                             fun flushLine() {
+                                if (characters.isNotEmpty()) {
+                                    val firstPosition = positions.firstOrNull { it != null }
+                                    if (firstPosition != null) {
+                                        val lineText = characters.toString().trim().replace(Regex("\\s+"), " ")
+                                        if (lineText.isNotBlank()) {
+                                            fragments += PdfTextFragment(
+                                                lineText,
+                                                firstPosition.xDirAdj,
+                                                firstPosition.yDirAdj,
+                                                firstPosition.heightDir,
+                                            )
+                                        }
+                                    }
+                                }
+
                                 PdfTeamParser.levelPattern.findAll(characters).forEach { match ->
-                                    val position = positions[match.range.first] ?: return@forEach
+                                    val position = positions.getOrNull(match.range.first) ?: return@forEach
                                     labels += PdfLevelLabel(
                                         match.groupValues[1].toInt(), position.xDirAdj,
                                         position.yDirAdj, position.heightDir,
@@ -112,7 +128,7 @@ object PdfTeamImporter {
                         stripper.endPage = selectedPage
                         stripper.getText(document)
                         stripper.flushLine()
-                        PdfTeamParser.parse(labels)
+                        PdfTeamParser.parse(labels, fragments)
                     }
                 } catch (_: java.io.IOException) {
                     null
