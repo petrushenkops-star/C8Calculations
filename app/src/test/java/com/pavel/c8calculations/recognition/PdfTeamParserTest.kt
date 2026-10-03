@@ -33,11 +33,11 @@ class PdfTeamParserTest {
 
     @Test fun `only L1 L2 L3 are included and L4 is excluded`() {
         val result = PdfTeamParser.parse(listOf(
-            PdfLevelLabel(6, 10f, 20f, 8f),  // leader
-            PdfLevelLabel(2, 100f, 20f, 8f), // L1
-            PdfLevelLabel(3, 200f, 20f, 8f), // L2
-            PdfLevelLabel(4, 300f, 20f, 8f), // L3
-            PdfLevelLabel(5, 400f, 20f, 8f), // L4 - excluded
+            PdfLevelLabel(6, 10f, 20f, 8f),
+            PdfLevelLabel(2, 100f, 20f, 8f),
+            PdfLevelLabel(3, 200f, 20f, 8f),
+            PdfLevelLabel(4, 300f, 20f, 8f),
+            PdfLevelLabel(5, 400f, 20f, 8f),
         ))!!
         assertTrue(result.leaderExcluded)
         assertEquals(1, result.counts[2])
@@ -48,17 +48,39 @@ class PdfTeamParserTest {
 
     @Test fun `C0 and C1 preserve column depth but do not enter team total`() {
         val result = PdfTeamParser.parse(listOf(
-            PdfLevelLabel(6, 10f, 20f, 8f),  // leader
-            PdfLevelLabel(0, 100f, 20f, 8f), // L1 C0
-            PdfLevelLabel(1, 200f, 20f, 8f), // L2 C1
-            PdfLevelLabel(4, 300f, 20f, 8f), // L3 C4 - included
-            PdfLevelLabel(5, 400f, 20f, 8f), // L4 C5 - excluded
+            PdfLevelLabel(6, 10f, 20f, 8f),
+            PdfLevelLabel(0, 100f, 20f, 8f),
+            PdfLevelLabel(1, 200f, 20f, 8f),
+            PdfLevelLabel(4, 300f, 20f, 8f),
+            PdfLevelLabel(5, 400f, 20f, 8f),
         ))!!
         assertTrue(result.leaderExcluded)
-        assertEquals(1, result.counts[1]) // kept visible for verification, excluded from team total
+        assertEquals(1, result.counts[1])
         assertEquals(1, result.counts[4])
         assertEquals(0, result.counts[5])
         assertEquals(1, (2..6).sumOf { result.counts[it] })
+    }
+
+    @Test fun `participant card extracts level name uid and date`() {
+        val labels = listOf(
+            PdfLevelLabel(6, 10f, 20f, 8f),
+            PdfLevelLabel(6, 100f, 20f, 8f),
+            PdfLevelLabel(4, 100f, 70f, 8f),
+        )
+        val fragments = listOf(
+            PdfTextFragment("C6", 100f, 20f, 8f),
+            PdfTextFragment("Павел", 100f, 28f, 8f),
+            PdfTextFragment("7226071297", 100f, 36f, 8f),
+            PdfTextFragment("31.10.25", 100f, 44f, 8f),
+        )
+
+        val result = PdfTeamParser.parse(labels, fragments)!!
+        val participant = result.cards.first { it.depth == 1 && it.y == 20 }
+
+        assertEquals(6, participant.level)
+        assertEquals("Павел", participant.name)
+        assertEquals("7226071297", participant.uid)
+        assertEquals("31.10.25", participant.date)
     }
 
     @Test fun `overprinted labels count once and nearby distinct cards survive`() {
@@ -76,7 +98,6 @@ class PdfTeamParserTest {
     }
 
     @Test fun `sample PDF geometry yields 28 eligible participants`() {
-        // Anonymized level/coordinate fixture extracted from the supplied PDF.
         val labels = javaClass.getResourceAsStream("/team-pdf-labels.tsv")!!.bufferedReader().useLines { lines ->
             lines.map { line ->
                 val values = line.split('\t')

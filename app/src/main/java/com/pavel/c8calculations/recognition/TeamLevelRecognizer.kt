@@ -19,6 +19,10 @@ data class TeamDetectedCard(
     val x: Int,
     val y: Int,
     val excludedAsLeader: Boolean,
+    val depth: Int? = null,
+    val name: String = "",
+    val uid: String = "",
+    val date: String = "",
 )
 
 data class TeamRecognitionResult(
@@ -36,6 +40,7 @@ object TeamLevelRecognizer {
 
     fun recognize(source: Bitmap, onResult: (TeamRecognitionResult?) -> Unit) {
         val matches = mutableListOf<LevelMatch>()
+        val fragments = mutableListOf<TextFragment>()
         val scaledWidth = min(source.width * 2, 3000)
         val scale = scaledWidth.toFloat() / source.width
         val enlarged = Bitmap.createScaledBitmap(source, scaledWidth, (source.height * scale).roundToInt(), true)
@@ -48,20 +53,27 @@ object TeamLevelRecognizer {
         passes.forEach { pass ->
             recognizer.process(InputImage.fromBitmap(pass.bitmap, 0))
                 .addOnSuccessListener { text ->
-                    synchronized(lock) { collect(text, pass.scale, matches) }
+                    synchronized(lock) { collect(text, pass.scale, matches, fragments) }
                 }
                 .addOnCompleteListener {
                     if (remaining.decrementAndGet() == 0) {
                         recognizer.close()
-                        val result = synchronized(lock) { buildResult(matches) }
+                        val result = synchronized(lock) { buildResult(matches, fragments) }
                         onResult(result)
                     }
                 }
         }
     }
 
-    private fun collect(text: Text, scale: Float, matches: MutableList<LevelMatch>) {
+    private fun collect(
+        text: Text,
+        scale: Float,
+        matches: MutableList<LevelMatch>,
+        fragments: MutableList<TextFragment>,
+    ) {
         text.textBlocks.forEach { block -> block.lines.forEach { line ->
+            line.boundingBox?.let { addFragment(line.text, it, scale, fragments) }
+
             val elements = line.elements
             var levelFoundInElements = false
             elements.forEachIndexed { index, element ->
@@ -110,11 +122,21 @@ object TeamLevelRecognizer {
     private fun addMatch(level: Int, box: Rect, scale: Float, matches: MutableList<LevelMatch>) {
         val x = (box.left / scale).roundToInt()
         val y = (box.centerY() / scale).roundToInt()
-        // The level label is at the left edge of every participant card. Using left X
-        // is more stable than the centre because OCR may return either "C4" alone or
-        // the whole participant line, whose centre differs substantially.
         if (matches.any { abs(it.x - x) <= 45 && abs(it.y - y) <= 20 }) return
         matches += LevelMatch(level, x, y)
+    }
+
+    private fun addFragment(text: String, box: Rect, scale: Float, fragments: MutableList<TextFragment>) {
+        val normalized = text.trim().replace(Regex("\\s+"), " ")
+        if (normalized.isBlank()) return
+        val x = (box.left / scale).roundToInt()
+        val y = (box.centerY() / scale).roundToInt()
+        val height = (box.height() / scale).roundToInt().coerceAtLeast(1)
+        if (fragments.any {
+                it.text.equals(normalized, ignoreCase = true) &&
+                    abs(it.x - x) <= 45 && abs(it.y - y) <= 20
+            }) return
+        fragments += TextFragment(normalized, x, y, height)
     }
 
     private fun toHighContrast(source: Bitmap): Bitmap {
@@ -131,32 +153,67 @@ object TeamLevelRecognizer {
         return result
     }
 
-    private fun buildResult(raw: List<LevelMatch>): TeamRecognitionResult? {
+    private fun buildResult(raw: List<LevelMatch>, fragments: List<TextFragment>): TeamRecognitionResult? {
         if (raw.isEmpty()) return null
         val matches = raw.sortedWith(compareBy<LevelMatch> { it.x }.thenBy { it.y })
         val columns = groupIntoColumns(matches)
         val leaderColumn = columns.firstOrNull().orEmpty()
-        // A leader exists only when the leftmost column contains exactly one card.
         val leader = leaderColumn.singleOrNull()
 
-        // L1 is the first column to the right of the leader, then L2 and L3.
-        // C0/C1 remain in the geometry so they cannot make a column disappear and
-        // accidentally shift L4 into L3. Only C2-C6 belong to the team total.
         val firstThreeLevels = if (leader != null) columns.drop(1).take(3).flatten() else emptyList()
         val counts = IntArray(7)
         firstThreeLevels.forEach { match ->
             if (match.level in 1..6) counts[match.level]++
         }
 
-        val cards = matches.map {
-            TeamDetectedCard(
-                level = it.level,
-                x = it.x,
-                y = it.y,
-                excludedAsLeader = it === leader,
-            )
+        val cards = buildList {
+            columns.forEachIndexed { columnIndex, column ->
+                column.sortedBy { it.y }.forEach { match ->
+                    val depth = if (leader != null) columnIndex else null
+                    val cardText = textForCard(match, column, columnIndex, columns, fragments)
+                    val fields = ParticipantTextExtractor.extract(cardText)
+                    add(
+                        TeamDetectedCard(
+                            level = match.level,
+                            x = match.x,
+                            y = match.y,
+                            excludedAsLeader = match === leader,
+                            depth = depth,
+                            name = fields.name,
+                            uid = fields.uid,
+                            date = fields.date,
+                        )
+                    )
+                }
+            }
         }
         return TeamRecognitionResult(counts, matches.size, leader != null, cards)
+    }
+
+    private fun textForCard(
+        match: LevelMatch,
+        column: List<LevelMatch>,
+        columnIndex: Int,
+        columns: List<List<LevelMatch>>,
+        fragments: List<TextFragment>,
+    ): List<String> {
+        val sorted = column.sortedBy { it.y }
+        val index = sorted.indexOf(match)
+        val gaps = sorted.zipWithNext { a, b -> b.y - a.y }.filter { it > 4 }
+        val fallbackGap = gaps.sorted().let { values ->
+            if (values.isEmpty()) 120 else values[values.size / 2]
+        }
+        val nextY = sorted.getOrNull(index + 1)?.y
+        val top = match.y - 24
+        val bottom = (nextY?.minus(2) ?: (match.y + fallbackGap)).coerceAtLeast(match.y + 24)
+        val nextColumnX = columns.getOrNull(columnIndex + 1)?.map { it.x }?.average()?.roundToInt()
+        val left = match.x - 35
+        val right = nextColumnX?.minus(18) ?: (match.x + 420)
+
+        return fragments
+            .filter { it.x in left..right && it.y in top..bottom }
+            .sortedBy { it.y }
+            .map { it.text }
     }
 
     private fun groupIntoColumns(matches: List<LevelMatch>): List<List<LevelMatch>> {
@@ -175,4 +232,5 @@ object TeamLevelRecognizer {
 
     private data class Pass(val bitmap: Bitmap, val scale: Float)
     private data class LevelMatch(val level: Int, val x: Int, val y: Int)
+    private data class TextFragment(val text: String, val x: Int, val y: Int, val height: Int)
 }
