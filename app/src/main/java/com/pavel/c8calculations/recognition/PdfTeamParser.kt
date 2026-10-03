@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 data class PdfLevelLabel(val level: Int, val x: Float, val y: Float, val height: Float)
 
 object PdfTeamParser {
-    val levelPattern = Regex("(?i)(?<![\\p{L}\\p{N}])[CС]\\s*([1-6])(?![\\p{L}\\p{N}])")
+    val levelPattern = Regex("(?iu)(?<![\\p{L}\\p{N}])[CС]\\s*([1-6])(?![\\p{L}\\p{N}])")
 
     fun parse(raw: List<PdfLevelLabel>): TeamRecognitionResult? {
         val labels = mutableListOf<PdfLevelLabel>()
