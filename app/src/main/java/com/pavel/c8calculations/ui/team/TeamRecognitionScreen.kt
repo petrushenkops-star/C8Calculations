@@ -1,6 +1,11 @@
 package com.pavel.c8calculations.ui.team
 
 import android.provider.MediaStore
+import android.net.Uri
+import com.pavel.c8calculations.recognition.PdfTeamImporter
+import com.pavel.c8calculations.recognition.TeamRecognitionResult
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -34,6 +39,87 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         mutableStateOf(if (preferences.contains("leaderExcluded")) preferences.getBoolean("leaderExcluded", false) else null)
     }
     var recognizing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var pendingPdf by remember { mutableStateOf<Uri?>(null) }
+    var pdfPageCount by remember { mutableStateOf(0) }
+    var pageInput by remember { mutableStateOf("1") }
+
+    fun applyResult(result: TeamRecognitionResult?, source: String) {
+        recognizing = false
+        if (result == null) {
+            statusText = "$source: не удалось распознать уровни C1–C6. Прежние значения сохранены; их можно исправить вручную."
+        } else {
+            counts = (1..6).map { result.counts[it].toString() }
+            leaderExcluded = result.leaderExcluded
+            statusText = "$source: найдено карточек — ${result.detectedCards}. Проверьте состав команды."
+        }
+    }
+
+    fun importPdf(uri: Uri, page: Int? = null) {
+        recognizing = true
+        statusText = "Чтение PDF…"
+        scope.launch {
+            try {
+                val loaded = PdfTeamImporter.read(context, uri, page)
+                val bitmap = loaded.bitmap
+                if (bitmap == null) {
+                    pendingPdf = uri
+                    pdfPageCount = loaded.pageCount
+                    pageInput = "1"
+                    recognizing = false
+                    statusText = "Выберите страницу PDF для распознавания"
+                } else {
+                    selectedBitmap = bitmap
+                    val source = "PDF, страница ${loaded.pageNumber} из ${loaded.pageCount}"
+                    if (loaded.textResult != null) {
+                        applyResult(loaded.textResult, source)
+                    } else {
+                        statusText = "$source: распознавание изображения…"
+                        TeamLevelRecognizer.recognize(bitmap) { result -> applyResult(result, source) }
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                recognizing = false
+                statusText = when (error) {
+                    is SecurityException -> "Не удалось открыть PDF: файл защищён паролем или нет доступа. Выберите незашифрованный PDF."
+                    is IllegalArgumentException -> error.message ?: "Некорректный PDF"
+                    else -> "Не удалось прочитать PDF. Проверьте, что файл не повреждён и не защищён паролем."
+                }
+            }
+        }
+    }
+
+    val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) importPdf(uri)
+    }
+
+    pendingPdf?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingPdf = null; statusText = null },
+            title = { Text("Выбор страницы PDF") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Страниц: $pdfPageCount. Выберите страницу с нужной командой. Страницы не суммируются.")
+                    OutlinedTextField(
+                        value = pageInput,
+                        onValueChange = { value -> if (value.length <= 6 && value.all(Char::isDigit)) pageInput = value },
+                        label = { Text("Номер страницы") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = pageInput.toIntOrNull()?.let { it in 1..pdfPageCount } == true,
+                    onClick = { pendingPdf = null; importPdf(uri, pageInput.toInt()) },
+                ) { Text("Распознать") }
+            },
+            dismissButton = { TextButton(onClick = { pendingPdf = null; statusText = null }) { Text("Отмена") } },
+        )
+    }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -85,7 +171,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         ) {
             Text("Состав команды", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Загрузите изображение структуры или скорректируйте результат вручную.",
+                "Загрузите изображение или PDF со структурой команды. После распознавания проверьте результат.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -94,8 +180,15 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !recognizing
             ) {
-                Text(if (selectedBitmap == null) "Загрузить структуру команды" else "Выбрать другое изображение")
+                Text(if (selectedBitmap == null) "Загрузить изображение" else "Выбрать другое изображение")
             }
+
+            OutlinedButton(
+                onClick = { pdfPicker.launch(arrayOf("application/pdf")) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !recognizing,
+            ) { Text("Загрузить PDF") }
+            if (recognizing) LinearProgressIndicator(Modifier.fillMaxWidth())
 
             selectedBitmap?.let { bitmap ->
                 Card(Modifier.fillMaxWidth()) {
@@ -149,7 +242,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         leaderExcluded?.let { excluded ->
                             Text(
                                 if (excluded) "Лидер обнаружен и исключён из подсчёта"
-                                else "Лидер на изображении не обнаружен"
+                                else "Лидер не определён автоматически — проверьте состав"
                             )
                         }
                         Text("C1 не учитываются в составе команды")
