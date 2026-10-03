@@ -64,7 +64,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
             statusText = "$source: лидер не определён автоматически. Прежние значения сохранены; проверьте структуру вручную."
         } else {
             val recognizedParticipants = result.cards.filter {
-                !it.excludedAsLeader && it.depth in 1..3 && it.level in 2..6
+                !it.excludedAsLeader && (it.depth?.let { depth -> depth in 1..3 } == true) && it.level in 2..6
             }
             counts = (1..6).map { result.counts[it].toString() }
             participants = recognizedParticipants
