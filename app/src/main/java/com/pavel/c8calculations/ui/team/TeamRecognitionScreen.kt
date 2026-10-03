@@ -47,11 +47,14 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     fun applyResult(result: TeamRecognitionResult?, source: String) {
         recognizing = false
         if (result == null) {
-            statusText = "$source: не удалось распознать уровни C1–C6. Прежние значения сохранены; их можно исправить вручную."
+            statusText = "$source: не удалось распознать уровни C0–C6. Прежние значения сохранены; их можно исправить вручную."
+        } else if (!result.leaderExcluded) {
+            leaderExcluded = false
+            statusText = "$source: лидер не определён автоматически. Прежние значения сохранены; проверьте структуру вручную."
         } else {
             counts = (1..6).map { result.counts[it].toString() }
-            leaderExcluded = result.leaderExcluded
-            statusText = "$source: найдено карточек — ${result.detectedCards}. Проверьте состав команды."
+            leaderExcluded = true
+            statusText = "$source: найдено карточек — ${result.detectedCards}. Учтены только L1, L2 и L3. Проверьте состав команды."
         }
     }
 
@@ -130,14 +133,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     statusText = "Распознавание..."
                     leaderExcluded = null
                     TeamLevelRecognizer.recognize(bitmap) { result ->
-                        recognizing = false
-                        if (result == null) {
-                            statusText = "Не удалось распознать уровни C1–C6"
-                        } else {
-                            counts = (1..6).map { result.counts[it].toString() }
-                            leaderExcluded = result.leaderExcluded
-                            statusText = "Распознавание завершено: найдено карточек — ${result.detectedCards}"
-                        }
+                        applyResult(result, "Изображение")
                     }
                 }
                 .onFailure {
@@ -171,7 +167,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         ) {
             Text("Состав команды", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Загрузите изображение или PDF со структурой команды. После распознавания проверьте результат.",
+                "Загрузите изображение или PDF со структурой команды. В состав входят только участники из L1, L2 и L3. Лидер, C0 и C1 не учитываются.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -245,7 +241,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                                 else "Лидер не определён автоматически — проверьте состав"
                             )
                         }
-                        Text("C1 не учитываются в составе команды")
+                        Text("Учитываются только L1–L3; лидер, C0 и C1 в состав команды не входят")
 
                     }
                 }
