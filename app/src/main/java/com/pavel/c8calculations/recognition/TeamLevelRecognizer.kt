@@ -29,9 +29,10 @@ data class TeamRecognitionResult(
 )
 
 object TeamLevelRecognizer {
-    private val levelPattern = Pattern.compile("(?i)[CСCcСс]\\s*([1-6])")
+    private val levelPattern = Pattern.compile("(?i)[CСCcСс]\\s*([0-6])")
     private val c4AsLetterPattern = Pattern.compile("(?i)^\\s*[CСCcСс]\\s*[AАaа](?=\\s|$)")
-    private val digitPattern = Pattern.compile("[1-6]")
+    private val digitPattern = Pattern.compile("[0-6]")
+    private const val COLUMN_TOLERANCE_PX = 45
 
     fun recognize(source: Bitmap, onResult: (TeamRecognitionResult?) -> Unit) {
         val matches = mutableListOf<LevelMatch>()
@@ -93,7 +94,7 @@ object TeamLevelRecognizer {
             }
 
             // ML Kit can merge a level with the rest of a dense card into one OCR line.
-            // Fall back to the complete line so C1-C6 is not lost when element segmentation varies.
+            // Fall back to the complete line so C0-C6 is not lost when element segmentation varies.
             if (!levelFoundInElements) {
                 val lineText = line.text.trim()
                 val lineMatcher = levelPattern.matcher(lineText)
@@ -133,12 +134,20 @@ object TeamLevelRecognizer {
     private fun buildResult(raw: List<LevelMatch>): TeamRecognitionResult? {
         if (raw.isEmpty()) return null
         val matches = raw.sortedWith(compareBy<LevelMatch> { it.x }.thenBy { it.y })
-        val minX = matches.minOf { it.x }
-        val leftColumn = matches.filter { abs(it.x - minX) <= 35 }
+        val columns = groupIntoColumns(matches)
+        val leaderColumn = columns.firstOrNull().orEmpty()
         // A leader exists only when the leftmost column contains exactly one card.
-        val leader = if (leftColumn.size == 1) leftColumn.first() else null
+        val leader = leaderColumn.singleOrNull()
+
+        // L1 is the first column to the right of the leader, then L2 and L3.
+        // C0/C1 remain in the geometry so they cannot make a column disappear and
+        // accidentally shift L4 into L3. Only C2-C6 belong to the team total.
+        val firstThreeLevels = if (leader != null) columns.drop(1).take(3).flatten() else emptyList()
         val counts = IntArray(7)
-        matches.forEach { if (it !== leader) counts[it.level]++ }
+        firstThreeLevels.forEach { match ->
+            if (match.level in 1..6) counts[match.level]++
+        }
+
         val cards = matches.map {
             TeamDetectedCard(
                 level = it.level,
@@ -148,6 +157,20 @@ object TeamLevelRecognizer {
             )
         }
         return TeamRecognitionResult(counts, matches.size, leader != null, cards)
+    }
+
+    private fun groupIntoColumns(matches: List<LevelMatch>): List<List<LevelMatch>> {
+        val columns = mutableListOf<MutableList<LevelMatch>>()
+        matches.forEach { match ->
+            val current = columns.lastOrNull()
+            val currentX = current?.map { it.x }?.average()
+            if (current == null || currentX == null || abs(match.x - currentX) > COLUMN_TOLERANCE_PX) {
+                columns += mutableListOf(match)
+            } else {
+                current += match
+            }
+        }
+        return columns
     }
 
     private data class Pass(val bitmap: Bitmap, val scale: Float)
