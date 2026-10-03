@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -82,22 +83,56 @@ object PdfTeamImporter {
                             val characters = StringBuilder()
                             val positions = mutableListOf<TextPosition?>()
 
-                            fun flushLine() {
-                                if (characters.isNotEmpty()) {
-                                    val firstPosition = positions.firstOrNull { it != null }
-                                    if (firstPosition != null) {
-                                        val lineText = characters.toString().trim().replace(Regex("\\s+"), " ")
-                                        if (lineText.isNotBlank()) {
-                                            fragments += PdfTextFragment(
-                                                lineText,
-                                                firstPosition.xDirAdj,
-                                                firstPosition.yDirAdj,
-                                                firstPosition.heightDir,
-                                            )
-                                        }
+                            fun addCardFragments(textPositions: List<TextPosition>) {
+                                if (textPositions.isEmpty()) return
+                                val chunks = mutableListOf<MutableList<TextPosition>>()
+                                var current = mutableListOf<TextPosition>()
+                                var previous: TextPosition? = null
+
+                                textPositions.forEach { position ->
+                                    val prev = previous
+                                    val height = max(position.heightDir, prev?.heightDir ?: position.heightDir)
+                                    val previousRight = if (prev == null) position.xDirAdj else prev.xDirAdj + prev.widthDirAdj
+                                    val gap = position.xDirAdj - previousRight
+                                    val changedRow = prev != null && abs(position.yDirAdj - prev.yDirAdj) > max(2f, height)
+                                    val movedBack = prev != null && position.xDirAdj < prev.xDirAdj - 2f
+                                    // Normal spaces inside one card are much smaller. A large X gap means
+                                    // PDFBox put two cards from the same horizontal row into one text run.
+                                    val crossedCardGap = prev != null && gap > max(18f, height * 2.5f)
+
+                                    if (current.isNotEmpty() && (changedRow || movedBack || crossedCardGap)) {
+                                        chunks += current
+                                        current = mutableListOf()
+                                    }
+                                    current += position
+                                    previous = position
+                                }
+                                if (current.isNotEmpty()) chunks += current
+
+                                chunks.forEach { chunk ->
+                                    val first = chunk.first()
+                                    val value = chunk.joinToString(separator = "") { it.unicode.orEmpty() }
+                                        .replace(Regex("\\s+"), " ")
+                                        .trim()
+                                    if (value.isNotBlank() && fragments.none {
+                                            abs(it.x - first.xDirAdj) < 1f &&
+                                                abs(it.y - first.yDirAdj) < 1f &&
+                                                it.text == value
+                                        }) {
+                                        fragments += PdfTextFragment(
+                                            value,
+                                            first.xDirAdj,
+                                            first.yDirAdj,
+                                            first.heightDir,
+                                        )
                                     }
                                 }
+                            }
 
+                            fun flushLine() {
+                                // The line aggregate is retained only for finding every C0-C6 label.
+                                // Participant text is collected separately by spatial chunks above,
+                                // otherwise two cards on the same Y coordinate can be merged.
                                 PdfTeamParser.levelPattern.findAll(characters).forEach { match ->
                                     val position = positions.getOrNull(match.range.first) ?: return@forEach
                                     labels += PdfLevelLabel(
@@ -110,6 +145,7 @@ object PdfTeamImporter {
                             }
 
                             override fun writeString(text: String, textPositions: MutableList<TextPosition>) {
+                                addCardFragments(textPositions)
                                 if (characters.isNotEmpty()) {
                                     characters.append(' ')
                                     positions.add(null)

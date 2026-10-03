@@ -83,6 +83,29 @@ class PdfTeamParserTest {
         assertEquals("31.10.25", participant.date)
     }
 
+    @Test fun `neighboring cards on same row keep their own participant data`() {
+        val labels = listOf(
+            PdfLevelLabel(6, 10f, 100f, 8f),
+            PdfLevelLabel(5, 100f, 20f, 8f),
+            PdfLevelLabel(4, 300f, 20f, 8f),
+        )
+        val fragments = listOf(
+            PdfTextFragment("C5 Наталья 6590381441 23.05.26", 100f, 20f, 8f),
+            PdfTextFragment("C4 Михаил 2112523329 17.09.26", 300f, 20f, 8f),
+        )
+
+        val result = PdfTeamParser.parse(labels, fragments)!!
+        val natalya = result.cards.first { it.depth == 1 }
+        val mikhail = result.cards.first { it.depth == 2 }
+
+        assertEquals("Наталья", natalya.name)
+        assertEquals("6590381441", natalya.uid)
+        assertEquals("23.05.26", natalya.date)
+        assertEquals("Михаил", mikhail.name)
+        assertEquals("2112523329", mikhail.uid)
+        assertEquals("17.09.26", mikhail.date)
+    }
+
     @Test fun `overprinted labels count once and nearby distinct cards survive`() {
         val result = PdfTeamParser.parse(listOf(
             PdfLevelLabel(6, 5f, 30f, 6f),
