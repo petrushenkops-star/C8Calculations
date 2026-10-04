@@ -156,7 +156,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            // Participant details are intentionally a PDF-only feature.
             participants = emptyList()
             participantListFromPdf = false
             runCatching { MediaStore.Images.Media.getBitmap(context.contentResolver, uri) }
@@ -295,7 +294,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
             if (participantListFromPdf && participants.isNotEmpty()) {
                 HorizontalDivider()
                 Text("Список участников команды", style = MaterialTheme.typography.titleLarge)
-                Text("${participants.size} участников.")
 
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
