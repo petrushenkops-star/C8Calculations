@@ -30,7 +30,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
-enum class TeamSortField { LINE, LEVEL, NAME, UID, DATE }
+enum class TeamSortField { LINE, LEVEL, NAME, DATE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -295,7 +295,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
             if (participantListFromPdf && participants.isNotEmpty()) {
                 HorizontalDivider()
                 Text("Список участников команды", style = MaterialTheme.typography.titleLarge)
-                Text("${participants.size} участников из PDF. Нажмите на поле сортировки повторно, чтобы изменить направление.")
+                Text("${participants.size} участников.")
 
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -308,9 +308,6 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                         if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
                     }
                     SortChip("Имя", TeamSortField.NAME, sortField, sortAscending) { selected ->
-                        if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
-                    }
-                    SortChip("UID", TeamSortField.UID, sortField, sortAscending) { selected ->
                         if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
                     }
                     SortChip("Дата", TeamSortField.DATE, sortField, sortAscending) { selected ->
@@ -384,7 +381,6 @@ private fun sortParticipants(
             .thenBy { it.name.lowercase() }
         TeamSortField.LEVEL -> compareBy<TeamDetectedCard> { it.level }.thenBy { it.name.lowercase() }
         TeamSortField.NAME -> compareBy<TeamDetectedCard> { it.name.isBlank() }.thenBy { it.name.lowercase() }
-        TeamSortField.UID -> compareBy<TeamDetectedCard> { it.uid.isBlank() }.thenBy { it.uid.padStart(20, '0') }
         TeamSortField.DATE -> compareBy<TeamDetectedCard> { dateSortKey(it.date) }.thenBy { it.name.lowercase() }
     }
     return participants.sortedWith(if (ascending) comparator else comparator.reversed())
