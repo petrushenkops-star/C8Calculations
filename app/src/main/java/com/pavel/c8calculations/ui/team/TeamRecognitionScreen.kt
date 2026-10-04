@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.recognition.PdfTeamImporter
 import com.pavel.c8calculations.recognition.TeamDetectedCard
@@ -29,7 +30,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
-enum class TeamSortField { LEVEL, NAME, UID, DATE }
+enum class TeamSortField { LINE, LEVEL, NAME, UID, DATE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -300,6 +301,9 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    SortChip("Линия", TeamSortField.LINE, sortField, sortAscending) { selected ->
+                        if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
+                    }
                     SortChip("Уровень", TeamSortField.LEVEL, sortField, sortAscending) { selected ->
                         if (sortField == selected) sortAscending = !sortAscending else { sortField = selected; sortAscending = true }
                     }
@@ -317,16 +321,20 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 sortedParticipants.forEachIndexed { index, participant ->
                     Card(Modifier.fillMaxWidth()) {
                         Column(
-                            Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Text(
-                                "${index + 1}. C${participant.level}  •  L${participant.depth ?: "—"}",
+                                "${index + 1}. C${participant.level}  •  L${participant.depth ?: "—"}  •  ${participant.name.ifBlank { "—" }}",
                                 style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
-                            Text("Имя: ${participant.name.ifBlank { "—" }}")
-                            Text("UID: ${participant.uid.ifBlank { "—" }}")
-                            Text("Дата: ${participant.date.ifBlank { "—" }}")
+                            Text(
+                                "UID: ${participant.uid.ifBlank { "—" }}  •  Дата: ${participant.date.ifBlank { "—" }}",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                     }
                 }
@@ -371,6 +379,9 @@ private fun sortParticipants(
     ascending: Boolean,
 ): List<TeamDetectedCard> {
     val comparator = when (field) {
+        TeamSortField.LINE -> compareBy<TeamDetectedCard> { it.depth ?: Int.MAX_VALUE }
+            .thenBy { it.level }
+            .thenBy { it.name.lowercase() }
         TeamSortField.LEVEL -> compareBy<TeamDetectedCard> { it.level }.thenBy { it.name.lowercase() }
         TeamSortField.NAME -> compareBy<TeamDetectedCard> { it.name.isBlank() }.thenBy { it.name.lowercase() }
         TeamSortField.UID -> compareBy<TeamDetectedCard> { it.uid.isBlank() }.thenBy { it.uid.padStart(20, '0') }
