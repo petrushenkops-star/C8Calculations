@@ -75,6 +75,12 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                 val recognizedParticipants = result.cards.filter {
                     !it.excludedAsLeader && (it.depth?.let { depth -> depth in 1..3 } == true) && it.level in 2..6
                 }
+                val leader = result.cards.firstOrNull { it.excludedAsLeader }
+                preferences.edit()
+                    .putString("leader_name", leader?.name.orEmpty())
+                    .putString("leader_uid", leader?.uid.orEmpty())
+                    .putInt("l1_count", recognizedParticipants.count { it.depth == 1 })
+                    .apply()
                 participants = recognizedParticipants
                 participantListFromPdf = true
                 statusText = "$source: найдено карточек — ${result.detectedCards}. В список команды включено ${recognizedParticipants.size} участников из L1–L3."
@@ -158,6 +164,11 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
         if (uri != null) {
             participants = emptyList()
             participantListFromPdf = false
+            preferences.edit()
+                .remove("leader_name")
+                .remove("leader_uid")
+                .remove("l1_count")
+                .apply()
             runCatching { MediaStore.Images.Media.getBitmap(context.contentResolver, uri) }
                 .onSuccess { bitmap ->
                     selectedBitmap = bitmap
