@@ -13,7 +13,11 @@ import androidx.compose.ui.unit.dp
 import com.pavel.c8calculations.calculation.DividendCalculator
 import com.pavel.c8calculations.calculation.DividendInput
 import com.pavel.c8calculations.calculation.DividendResult
+import com.pavel.c8calculations.calculation.TeamReportData
+import com.pavel.c8calculations.calculation.TeamReportFormatter
 import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,15 +26,44 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     val preferences = remember {
         context.getSharedPreferences("team_structure", android.content.Context.MODE_PRIVATE)
     }
+    val reportPreferences = remember {
+        context.getSharedPreferences("team_report", android.content.Context.MODE_PRIVATE)
+    }
+
     var days by remember { mutableStateOf("10") }
+    val c1 = preferences.getInt("c1", 0)
     val c2 = preferences.getInt("c2", 0)
     val c3 = preferences.getInt("c3", 0)
     val c4 = preferences.getInt("c4", 0)
     val c5 = preferences.getInt("c5", 0)
     val c6 = preferences.getInt("c6", 0)
     val totalParticipants = c2 + c3 + c4 + c5 + c6
+    val officialParticipants = c1 + c2 + c3 + c4 + c5 + c6
+    val directParticipants = preferences.getInt("l1_count", 0)
+    val leaderName = preferences.getString("leader_name", "").orEmpty()
+    val leaderUid = preferences.getString("leader_uid", "").orEmpty()
+
     var result by remember { mutableStateOf<DividendResult?>(null) }
     var errorText by remember { mutableStateOf<String?>(null) }
+
+    var meetings by remember { mutableStateOf(reportPreferences.getString("meetings", "0").orEmpty()) }
+    var sergeant by remember { mutableStateOf(reportPreferences.getString("sergeant", "0").orEmpty()) }
+    var corporal by remember { mutableStateOf(reportPreferences.getString("corporal", "0").orEmpty()) }
+    var corporate by remember { mutableStateOf(reportPreferences.getString("corporate", "0").orEmpty()) }
+    var teamProblems by remember { mutableStateOf(reportPreferences.getString("team_problems", "").orEmpty()) }
+    var tenDayPlan by remember { mutableStateOf(reportPreferences.getString("ten_day_plan", "").orEmpty()) }
+    var reportText by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(meetings, sergeant, corporal, corporate, teamProblems, tenDayPlan) {
+        reportPreferences.edit()
+            .putString("meetings", meetings)
+            .putString("sergeant", sergeant)
+            .putString("corporal", corporal)
+            .putString("corporate", corporate)
+            .putString("team_problems", teamProblems)
+            .putString("ten_day_plan", tenDayPlan)
+            .apply()
+    }
 
     fun calculate() {
         try {
@@ -45,6 +78,31 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
             result = null
             errorText = e.message ?: "Проверьте введённые данные"
         }
+    }
+
+    fun formReport() {
+        val reportDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        reportText = TeamReportFormatter.format(
+            TeamReportData(
+                reportDate = reportDate,
+                leaderName = leaderName,
+                leaderUid = leaderUid,
+                meetings = meetings,
+                c1 = c1,
+                c2 = c2,
+                c3 = c3,
+                c4 = c4,
+                c5 = c5,
+                c6 = c6,
+                sergeant = sergeant,
+                corporal = corporal,
+                directParticipants = directParticipants,
+                officialParticipants = officialParticipants,
+                corporate = corporate,
+                teamProblems = teamProblems,
+                tenDayPlan = tenDayPlan,
+            )
+        )
     }
 
     Scaffold(
@@ -90,6 +148,55 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
 
             errorText?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             result?.let { DividendResultCard(it) }
+
+            HorizontalDivider()
+            Text("Отчёт", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Дата, лидер, UID, C1–C6, количество прямых L1 и общее количество участников заполняются автоматически.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Лидер: ${leaderName.ifBlank { "—" }}", style = MaterialTheme.typography.titleMedium)
+                    Text("UID: ${leaderUid.ifBlank { "—" }}")
+                    Text("C1 $c1; C2 $c2; C3 $c3; C4 $c4; C5 $c5; C6 $c6")
+                    Text("Прямые (L1): $directParticipants")
+                    Text("Всего оф. уч.: $officialParticipants")
+                }
+            }
+
+            if (leaderName.isBlank() || leaderUid.isBlank()) {
+                Text(
+                    "Для автоматического заполнения имени и UID лидера заново загрузите PDF в разделе «Структура команды».",
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
+            ReportNumberField("1. Совещаний", meetings) { meetings = it }
+            ReportNumberField("8. Сержант", sergeant) { sergeant = it }
+            ReportNumberField("9. Капрал", corporal) { corporal = it }
+            ReportNumberField("12. Корпоратив", corporate) { corporate = it }
+            ReportTextField("13. Проблемы команды", teamProblems) { teamProblems = it }
+            ReportTextField("14. План на ближайшие 10 дней", tenDayPlan) { tenDayPlan = it }
+
+            Button(
+                onClick = ::formReport,
+                enabled = leaderName.isNotBlank() && leaderUid.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Сформировать отчёт")
+            }
+
+            reportText?.let { text ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Готовый отчёт", style = MaterialTheme.typography.titleMedium)
+                        Text(text)
+                    }
+                }
+            }
         }
     }
 }
@@ -107,6 +214,30 @@ private fun IntegerField(label: String, value: String, onValueChange: (String) -
 }
 
 @Composable
+private fun ReportNumberField(label: String, value: String, onValueChange: (String) -> Unit) {
+    TextField(
+        value = value,
+        onValueChange = { text -> if (text.isEmpty() || text.all(Char::isDigit)) onValueChange(text) },
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun ReportTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        minLines = 2,
+        maxLines = 5,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
 private fun DividendResultCard(result: DividendResult) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -119,7 +250,6 @@ private fun DividendResultCard(result: DividendResult) {
                     "${item.level}: ${format(item.baseAmount)} × 0,02 × ${result.days} × ${item.participants} = ${format(item.amount)} USDT"
                 )
             }
- 
         }
     }
 }
