@@ -1,15 +1,76 @@
-# Автоматическая сборка APK без Android Studio
+# Автоматическая сборка и публикация APK без Android Studio
 
-Проект настроен для сборки в GitHub Actions.
+Проект `C8Calculations` собирается, тестируется, подписывается и публикуется через GitHub Actions. Основной workflow: `.github/workflows/android-build.yml`.
 
-## Что происходит автоматически
-1. GitHub получает исходники проекта.
-2. Поднимается Ubuntu runner.
-3. Устанавливается JDK 17.
-4. Используется Gradle 9.6.0.
-5. Выполняется `:app:assembleDebug`.
-6. Проверяется наличие APK.
-7. APK сохраняется как GitHub Actions artifact `C8Calculations-v0.1.0-debug` на 30 дней.
+## Когда запускается workflow
+- Pull request в `main`: проверка unit-тестов и debug-сборки.
+- Push/merge в `main`: проверка тестов, затем signed release-сборка и публикация.
+- `workflow_dispatch`: ручной запуск при необходимости.
 
-## Постоянная подпись
-Текущий workflow проверяет PHASE 1 и создаёт debug APK. Для гарантированных обновлений будущих release-версий будет использоваться один постоянный signing key, хранящийся вне исходников.
+## Проверка pull request
+Job `test-debug`:
+1. Checkout исходников.
+2. JDK 17.
+3. Gradle 9.6.0.
+4. `:app:testDebugUnitTest`.
+5. `:app:assembleDebug`.
+
+Release-job на pull request не запускается. Секреты подписи не нужны для обычной PR-проверки.
+
+## Release после попадания в main
+После успешного `test-debug` job `release`:
+1. Читает `versionName` из `app/build.gradle.kts`.
+2. Восстанавливает постоянный C8 signing key из защищённых GitHub Actions secrets.
+3. Проверяет keystore и alias.
+4. Выполняет `:app:assembleRelease`.
+5. Проверяет подпись и сертификат APK через `apksigner`.
+6. Переименовывает файл в `C8Calculations-v<versionName>-release.apk`.
+7. Создаёт постоянный GitHub Release `v<versionName>`, если такого Release ещё нет.
+8. Прикладывает подписанный APK к GitHub Release.
+9. После успешной постоянной публикации удаляет старые Android Actions artifacts из ветки `main`.
+10. Пытается сохранить дополнительный временный Actions artifact на 3 дня.
+
+GitHub Release является основным и постоянным местом скачивания APK. Actions artifact — только временная копия и его отсутствие не делает опубликованный Release недействительным.
+
+## Где скачивать APK
+Открыть репозиторий → **Releases** → нужная версия → **Assets** → `C8Calculations-v<version>-release.apk`.
+
+Для версии 1.1.11:
+- Tag/Release: `v1.1.11`
+- APK: `C8Calculations-v1.1.11-release.apk`
+
+Репозиторий приватный, поэтому для скачивания Release необходимо быть авторизованным в GitHub с доступом к `petrushenkops-star/C8Calculations`.
+
+## Версионирование
+Перед выпуском новой версии необходимо:
+- увеличить `versionCode`;
+- изменить `versionName`.
+
+Workflow автоматически использует новое `versionName` в имени APK и теге Release. Хардкодить номер версии в workflow не требуется.
+
+## Постоянная подпись и обновление поверх старой версии
+Release APK всегда подписывается одним постоянным ключом. Это необходимо, чтобы Android позволял устанавливать новую версию поверх ранее установленной без удаления приложения.
+
+Секреты GitHub Actions:
+- `C8_KEYSTORE_BASE64`
+- `C8_KEYSTORE_PASSWORD`
+- `C8_KEY_ALIAS`
+- `C8_KEY_PASSWORD`
+
+Keystore и пароли не должны попадать в git.
+
+## Хранение файлов
+- GitHub Releases: постоянное хранение стабильных APK.
+- GitHub Actions artifact: временно, `retention-days: 3`.
+- Старые Android Actions artifacts ветки `main` очищаются автоматически после успешной публикации Release.
+- Исходный код и commits при очистке artifacts не удаляются.
+
+6 октября 2026 старая схема хранения APK в Actions на 30 дней исчерпала artifact quota. Исторические Android artifacts были удалены, а постоянное хранение перенесено в GitHub Releases. GitHub может пересчитывать освобождённую artifact quota 6-12 часов, поэтому сразу после очистки временный artifact может не загрузиться; постоянный GitHub Release при этом остаётся доступным.
+
+## Текущая проверенная версия
+- Version: 1.1.11 / versionCode 113.
+- Unit tests: SUCCESS.
+- Debug build: SUCCESS.
+- Signed release build: SUCCESS.
+- APK signature verification: SUCCESS.
+- GitHub Release `v1.1.11`: published successfully.
