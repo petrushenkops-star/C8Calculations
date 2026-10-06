@@ -38,7 +38,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     val c5 = preferences.getInt("c5", 0)
     val c6 = preferences.getInt("c6", 0)
     val totalParticipants = c2 + c3 + c4 + c5 + c6
-    val officialParticipants = c1 + c2 + c3 + c4 + c5 + c6
+    val officialParticipants = TeamReportFormatter.officialParticipants(c2, c3, c4, c5, c6)
     val directParticipants = preferences.getInt("l1_count", 0)
     val leaderName = preferences.getString("leader_name", "").orEmpty()
     val leaderUid = preferences.getString("leader_uid", "").orEmpty()
@@ -152,7 +152,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
             HorizontalDivider()
             Text("Отчёт", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Дата, лидер, UID, C1–C6, количество прямых L1 и общее количество участников заполняются автоматически.",
+                "Дата, лидер, UID, C1–C6, количество прямых L1 и количество официальных участников C2–C6 заполняются автоматически.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -163,7 +163,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                     Text("UID: ${leaderUid.ifBlank { "—" }}")
                     Text("C1 $c1; C2 $c2; C3 $c3; C4 $c4; C5 $c5; C6 $c6")
                     Text("Прямые (L1): $directParticipants")
-                    Text("Всего оф. уч.: $officialParticipants")
+                    Text("Всего оф. уч. (C2–C6): $officialParticipants")
                 }
             }
 
@@ -193,7 +193,12 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Готовый отчёт", style = MaterialTheme.typography.titleMedium)
-                        Text(text)
+                        Text(
+                            text,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 0.7f,
+                            ),
+                        )
                     }
                 }
             }
