@@ -13,7 +13,7 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 
 ## Toolchain
 - Android Gradle Plugin: 9.4.0
-- Gradle: 9.6.0 in GitHub Actions
+- Gradle: 9.6.0 via committed Gradle Wrapper
 - JDK: 17 in GitHub Actions
 - compileSdk: 37
 - minSdk: 26
@@ -89,6 +89,8 @@ CI runs `:app:testDebugUnitTest` before building APKs.
 
 ## Build, signing and distribution
 - Pull requests to `main`: unit tests + debug APK build.
+- `main` is branch-protected: changes require a pull request and the `test-debug` status check from GitHub Actions; the branch must be up to date before merge and administrators cannot bypass the rule.
+- Repository visibility is public so GitHub Free can enforce branch protection.
 - Push to `main`: tests first, then signed release APK build.
 - Release APK uses the permanent C8 signing key stored in GitHub Actions secrets; the key is not committed to the repository.
 - CI verifies the APK signature/certificate before publication.
@@ -106,8 +108,6 @@ See `AUTOMATED_BUILD.md` for the current CI/release workflow.
 - Do not assume Android 1.1.11 features are already synchronized to iOS.
 
 ## Known issues / technical debt
-- `main` is currently not branch-protected.
-- Gradle Wrapper is not committed; CI installs Gradle 9.6.0 explicitly.
 - iOS and Android histories have diverged and should be normalized before continued parallel development.
 - Test coverage exists for core calculations and PDF parsing but is not yet comprehensive for all OCR/UI scenarios.
 - GitHub Actions artifact quota was exhausted by historical APKs on 2026-10-06. Old Android artifacts were cleaned; permanent APK storage now uses GitHub Releases. GitHub may take 6-12 hours to recalculate artifact quota.

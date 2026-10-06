@@ -23,14 +23,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Set up Gradle 9.6.0
+      - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.6.0'
       - name: Run unit tests
-        run: gradle --no-daemon :app:testDebugUnitTest
+        run: ./gradlew --no-daemon :app:testDebugUnitTest
       - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+        run: ./gradlew --no-daemon :app:assembleDebug
 
   release:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -48,10 +46,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Set up Gradle 9.6.0
+      - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.6.0'
       - name: Read app version
         id: version
         shell: bash
@@ -79,7 +75,7 @@ jobs:
           C8_KEYSTORE_PASSWORD: ${{ secrets.C8_KEYSTORE_PASSWORD }}
           C8_KEY_ALIAS: ${{ secrets.C8_KEY_ALIAS }}
           C8_KEY_PASSWORD: ${{ secrets.C8_KEY_PASSWORD }}
-        run: gradle --no-daemon :app:assembleRelease
+        run: ./gradlew --no-daemon :app:assembleRelease
       - name: Verify APK signature and certificate
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"

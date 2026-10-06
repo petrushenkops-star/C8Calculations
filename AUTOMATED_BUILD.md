@@ -11,9 +11,11 @@
 Job `test-debug`:
 1. Checkout исходников.
 2. JDK 17.
-3. Gradle 9.6.0.
-4. `:app:testDebugUnitTest`.
-5. `:app:assembleDebug`.
+3. Настройка Gradle-кэша через `gradle/actions/setup-gradle`.
+4. Unit-тесты через Gradle Wrapper: `./gradlew --no-daemon :app:testDebugUnitTest`.
+5. Debug-сборка через Gradle Wrapper: `./gradlew --no-daemon :app:assembleDebug`.
+
+Версия Gradle зафиксирована в репозитории через Gradle Wrapper (`gradle/wrapper/gradle-wrapper.properties`) и сейчас равна 9.6.0. Локальная сборка и GitHub Actions используют один и тот же Wrapper.
 
 Release-job на pull request не запускается. Секреты подписи не нужны для обычной PR-проверки.
 
@@ -39,7 +41,7 @@ GitHub Release является основным и постоянным мес�
 - Tag/Release: `v1.1.11`
 - APK: `C8Calculations-v1.1.11-release.apk`
 
-Репозиторий приватный, поэтому для скачивания Release необходимо быть авторизованным в GitHub с доступом к `petrushenkops-star/C8Calculations`.
+Репозиторий публичный, поэтому Release и его APK доступны без авторизации в GitHub.
 
 ## Версионирование
 Перед выпуском новой версии необходимо:
