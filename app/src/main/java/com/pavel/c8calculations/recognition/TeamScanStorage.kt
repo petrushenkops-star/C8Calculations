@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import java.io.File
 
+/** Keeps the latest successfully recognized team scan inside app storage for report rendering. */
 object TeamScanStorage {
     private const val FILE_NAME = "team_structure_scan.png"
 
