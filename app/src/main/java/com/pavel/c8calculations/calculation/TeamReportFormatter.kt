@@ -21,6 +21,9 @@ data class TeamReportData(
 )
 
 object TeamReportFormatter {
+    fun officialParticipants(c2: Int, c3: Int, c4: Int, c5: Int, c6: Int): Int =
+        c2 + c3 + c4 + c5 + c6
+
     fun format(data: TeamReportData): String = buildString {
         appendLine(data.reportDate)
         appendLine(data.leaderName.ifBlank { "—" })
