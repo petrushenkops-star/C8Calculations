@@ -5,6 +5,20 @@ import org.junit.Test
 
 class TeamReportFormatterTest {
     @Test
+    fun `official participants include only C2 to C6`() {
+        assertEquals(
+            28,
+            TeamReportFormatter.officialParticipants(
+                c2 = 0,
+                c3 = 6,
+                c4 = 10,
+                c5 = 6,
+                c6 = 6,
+            ),
+        )
+    }
+
+    @Test
     fun `formats report in approved order`() {
         val text = TeamReportFormatter.format(
             TeamReportData(
@@ -21,7 +35,7 @@ class TeamReportFormatterTest {
                 sergeant = "2",
                 corporal = "0",
                 directParticipants = 14,
-                officialParticipants = 29,
+                officialParticipants = TeamReportFormatter.officialParticipants(0, 6, 10, 6, 6),
                 corporate = "0",
                 teamProblems = "",
                 tenDayPlan = "Поиск новых участников. Обучение новичков.",
@@ -42,7 +56,7 @@ UID:7226071297
 8. Сержант- 2
 9. Капрал- 0
 10. Прямые - 14
-11. Всего оф. уч.- 29
+11. Всего оф. уч.- 28
 12. Корпоратив - 0
 13. Проблемы команды:
 14. План на ближайшие 10 дней:
