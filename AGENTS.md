@@ -97,10 +97,10 @@ For code changes:
 - add a regression test for a logic bug when feasible.
 
 Current CI equivalents:
-- gradle --no-daemon :app:testDebugUnitTest
-- gradle --no-daemon :app:assembleDebug
+- ./gradlew --no-daemon :app:testDebugUnitTest
+- ./gradlew --no-daemon :app:assembleDebug
 
-A Gradle Wrapper is not currently committed. Do not pretend ./gradlew exists until it is added.
+Use the committed Gradle Wrapper. Its version is the repository source of truth for Gradle in local development and CI.
 
 For UI-only changes that are not covered by unit tests, still run compilation/build checks and clearly state the manual/visual verification that remains.
 
