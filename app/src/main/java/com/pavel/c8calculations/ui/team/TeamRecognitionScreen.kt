@@ -24,6 +24,7 @@ import com.pavel.c8calculations.recognition.PdfTeamImporter
 import com.pavel.c8calculations.recognition.TeamDetectedCard
 import com.pavel.c8calculations.recognition.TeamLevelRecognizer
 import com.pavel.c8calculations.recognition.TeamRecognitionResult
+import com.pavel.c8calculations.recognition.TeamScanStorage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -39,7 +40,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     val preferences = remember {
         context.getSharedPreferences("team_structure", android.content.Context.MODE_PRIVATE)
     }
-    var selectedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var selectedBitmap by remember { mutableStateOf(TeamScanStorage.load(context)) }
     var counts by remember {
         mutableStateOf((1..6).map { preferences.getInt("c$it", 0).toString() })
     }
@@ -61,7 +62,12 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
     var pdfPageCount by remember { mutableStateOf(0) }
     var pageInput by remember { mutableStateOf("1") }
 
-    fun applyResult(result: TeamRecognitionResult?, source: String, includeParticipantList: Boolean) {
+    fun applyResult(
+        result: TeamRecognitionResult?,
+        source: String,
+        includeParticipantList: Boolean,
+        scanBitmap: android.graphics.Bitmap? = null,
+    ) {
         recognizing = false
         if (result == null) {
             statusText = "$source: не удалось распознать уровни C0–C6. Прежние значения сохранены; их можно исправить вручную."
@@ -69,6 +75,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
             leaderExcluded = false
             statusText = "$source: лидер не определён автоматически. Прежние значения сохранены; проверьте структуру вручную."
         } else {
+            scanBitmap?.let { TeamScanStorage.save(context, it) }
             counts = (1..6).map { result.counts[it].toString() }
             leaderExcluded = true
             if (includeParticipantList) {
@@ -109,11 +116,11 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     selectedBitmap = bitmap
                     val source = "PDF, страница ${loaded.pageNumber} из ${loaded.pageCount}"
                     if (loaded.textResult != null) {
-                        applyResult(loaded.textResult, source, includeParticipantList = true)
+                        applyResult(loaded.textResult, source, includeParticipantList = true, scanBitmap = bitmap)
                     } else {
                         statusText = "$source: распознавание изображения страницы…"
                         TeamLevelRecognizer.recognize(bitmap, extractParticipantDetails = true) { result ->
-                            applyResult(result, source, includeParticipantList = true)
+                            applyResult(result, source, includeParticipantList = true, scanBitmap = bitmap)
                         }
                     }
                 }
@@ -176,7 +183,7 @@ fun TeamRecognitionScreen(onBack: () -> Unit) {
                     statusText = "Распознавание..."
                     leaderExcluded = null
                     TeamLevelRecognizer.recognize(bitmap) { result ->
-                        applyResult(result, "Изображение", includeParticipantList = false)
+                        applyResult(result, "Изображение", includeParticipantList = false, scanBitmap = bitmap)
                     }
                 }
                 .onFailure {
