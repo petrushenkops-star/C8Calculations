@@ -1,5 +1,6 @@
 package com.pavel.c8calculations.ui.dividend
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -7,6 +8,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -15,6 +18,7 @@ import com.pavel.c8calculations.calculation.DividendInput
 import com.pavel.c8calculations.calculation.DividendResult
 import com.pavel.c8calculations.calculation.TeamReportData
 import com.pavel.c8calculations.calculation.TeamReportFormatter
+import com.pavel.c8calculations.recognition.TeamScanStorage
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -53,6 +57,8 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     var teamProblems by remember { mutableStateOf(reportPreferences.getString("team_problems", "").orEmpty()) }
     var tenDayPlan by remember { mutableStateOf(reportPreferences.getString("ten_day_plan", "").orEmpty()) }
     var reportText by remember { mutableStateOf<String?>(null) }
+    var reportDividendResult by remember { mutableStateOf<DividendResult?>(null) }
+    var reportScanBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     LaunchedEffect(meetings, sergeant, corporal, corporate, teamProblems, tenDayPlan) {
         reportPreferences.edit()
@@ -65,11 +71,13 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
             .apply()
     }
 
+    fun dividendResult(): DividendResult = DividendCalculator.calculate(
+        DividendInput(days.toInt(), 0, c2, c3, c4, c5, c6)
+    )
+
     fun calculate() {
         try {
-            result = DividendCalculator.calculate(
-                DividendInput(days.toInt(), 0, c2, c3, c4, c5, c6)
-            )
+            result = dividendResult()
             errorText = null
         } catch (_: NumberFormatException) {
             result = null
@@ -81,6 +89,21 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     }
 
     fun formReport() {
+        val calculatedDividends = try {
+            dividendResult()
+        } catch (_: NumberFormatException) {
+            errorText = "Проверьте количество дней"
+            return
+        } catch (e: IllegalArgumentException) {
+            errorText = e.message ?: "Проверьте введённые данные"
+            return
+        }
+
+        errorText = null
+        result = calculatedDividends
+        reportDividendResult = calculatedDividends
+        reportScanBitmap = TeamScanStorage.load(context)
+
         val reportDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
         reportText = TeamReportFormatter.format(
             TeamReportData(
@@ -174,6 +197,13 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                 )
             }
 
+            if (!TeamScanStorage.exists(context)) {
+                Text(
+                    "Чтобы добавить скан структуры в отчёт, один раз заново загрузите изображение или PDF в разделе «Структура команды».",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             ReportNumberField("1. Совещаний", meetings) { meetings = it }
             ReportNumberField("8. Сержант", sergeant) { sergeant = it }
             ReportNumberField("9. Капрал", corporal) { corporal = it }
@@ -196,6 +226,22 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(16.dp),
                     )
+                }
+
+                reportScanBitmap?.let { bitmap ->
+                    Text("Скан структуры команды", style = MaterialTheme.typography.titleMedium)
+                    Card(Modifier.fillMaxWidth()) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Скан структуры команды в отчёте",
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp).padding(8.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                }
+
+                reportDividendResult?.let { dividends ->
+                    DividendResultCard(dividends, compact = true)
                 }
             }
         }
@@ -239,16 +285,28 @@ private fun ReportTextField(label: String, value: String, onValueChange: (String
 }
 
 @Composable
-private fun DividendResultCard(result: DividendResult) {
+private fun DividendResultCard(result: DividendResult, compact: Boolean = false) {
+    val bodyStyle = if (compact) {
+        MaterialTheme.typography.bodyLarge.copy(
+            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 0.7f,
+        )
+    } else {
+        MaterialTheme.typography.bodyLarge
+    }
+
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp),
+        ) {
             Text("Итого", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${format(result.total)} USDT", style = MaterialTheme.typography.headlineMedium)
             HorizontalDivider()
             Text("Расшифровка", style = MaterialTheme.typography.titleMedium)
             result.levels.forEach { item ->
                 Text(
-                    "${item.level}: ${format(item.baseAmount)} × 0,02 × ${result.days} × ${item.participants} = ${format(item.amount)} USDT"
+                    "${item.level}: ${format(item.baseAmount)} × 0,02 × ${result.days} × ${item.participants} = ${format(item.amount)} USDT",
+                    style = bodyStyle,
                 )
             }
         }
