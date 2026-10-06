@@ -11,7 +11,7 @@
 Job `test-debug`:
 1. Checkout исходников.
 2. JDK 17.
-3. Настройка Gradle-кэша через `gradle/actions/setup-gradle`.
+3. Настройка Gradle-кэша через `gradle/actions/setup-gradle@v6` with `cache-provider: basic`.
 4. Unit-тесты через Gradle Wrapper: `./gradlew --no-daemon :app:testDebugUnitTest`.
 5. Debug-сборка через Gradle Wrapper: `./gradlew --no-daemon :app:assembleDebug`.
 
