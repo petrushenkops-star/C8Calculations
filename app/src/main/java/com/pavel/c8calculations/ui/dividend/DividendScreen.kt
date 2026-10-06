@@ -191,15 +191,11 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
 
             reportText?.let { text ->
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Готовый отчёт", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            text,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 0.7f,
-                            ),
-                        )
-                    }
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp),
+                    )
                 }
             }
         }
