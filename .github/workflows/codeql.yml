@@ -20,11 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - language: java-kotlin
-            build-mode: manual
-          - language: actions
-            build-mode: none
+        language: [java-kotlin, actions]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -36,11 +32,24 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Initialize CodeQL
+      - name: Initialize CodeQL for Java/Kotlin
+        if: matrix.language == 'java-kotlin'
+        uses: github/codeql-action/init@v4
+        env:
+          # Overlay databases require build-mode "none", while Kotlin requires
+          # a traced build. Disable overlay mode to keep the precise manual build
+          # without the fallback warning.
+          CODEQL_OVERLAY_DATABASE_MODE: none
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Initialize CodeQL for GitHub Actions
+        if: matrix.language == 'actions'
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          languages: actions
+          build-mode: none
 
       - name: Build Android debug variant
         if: matrix.language == 'java-kotlin'
