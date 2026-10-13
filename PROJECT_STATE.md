@@ -5,11 +5,11 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 ## Current release
 - Application Name: С8 Расчеты
 - Package / Application ID: `com.pavel.c8calculations`
-- Version Name: **1.1.14**
-- Version Code: **116**
+- Version Name: **1.1.15**
+- Version Code: **117**
 - Primary Android branch: `main`
 - Stable APK distribution: GitHub Releases, tag `v<versionName>`
-- Latest confirmed stable APK: `v1.1.13`; planned signed APK: `v1.1.14` after main CI.
+- Latest confirmed stable APK: `v1.1.14`; planned signed APK: `v1.1.15` after main CI.
 
 ## Toolchain
 - Android Gradle Plugin: 9.4.0
@@ -117,6 +117,7 @@ See `AUTOMATED_BUILD.md` for the current CI/release workflow.
 - GitHub Actions artifact quota was exhausted by historical APKs on 2026-10-06. Old Android artifacts were cleaned; permanent APK storage now uses GitHub Releases. GitHub may take 6-12 hours to recalculate artifact quota.
 
 ## Last completed work
+- Version 1.1.15 (planned): reduce the always-visible empty «13. Проблемы команды:» label to the same bodySmall size as a filled numeric field label. Only this field is changed; dividends, history and report data are unchanged.
 - Version 1.1.14 (planned): restore the version 1.1.12 dividend result/formula layout while preserving the 1.1.13 history; add colons to report field labels and normalize initial height of field 13. No financial rules changed.
 - Version 1.1.13: dividend history and compact screens; local preference persistence and unit tests; restored readable line-height.
 - Version 1.1.12: optional trust-fund income across all three profit forecast modes, daily reports and regression tests.

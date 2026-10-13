@@ -293,7 +293,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
             ReportNumberField("8. Сержант:", sergeant) { sergeant = it }
             ReportNumberField("9. Капрал:", corporal) { corporal = it }
             ReportNumberField("12. Корпоратив:", corporate) { corporate = it }
-            ReportTextField("13. Проблемы команды:", teamProblems, minLines = 1) { teamProblems = it }
+            ReportTextField("13. Проблемы команды:", teamProblems, minLines = 1, smallLabel = true) { teamProblems = it }
             ReportTextField("14. План на ближайшие 10 дней:", tenDayPlan) { tenDayPlan = it }
 
             Button(
@@ -379,11 +379,14 @@ private fun ReportNumberField(label: String, value: String, onValueChange: (Stri
 }
 
 @Composable
-private fun ReportTextField(label: String, value: String, minLines: Int = 2, onValueChange: (String) -> Unit) {
+private fun ReportTextField(label: String, value: String, minLines: Int = 2, smallLabel: Boolean = false, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = {
+            if (smallLabel) Text(label, style = MaterialTheme.typography.bodySmall)
+            else Text(label)
+        },
         minLines = minLines,
         maxLines = 5,
         modifier = Modifier.fillMaxWidth(),
