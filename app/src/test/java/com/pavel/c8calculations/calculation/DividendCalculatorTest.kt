@@ -42,4 +42,46 @@ class DividendCalculatorTest {
             DividendCalculator.calculate(DividendInput(days = 10, c4 = -1))
         }
     }
+    @Test
+    fun emptyTeamHasZeroDividendAcrossAllLevels() {
+        val result = DividendCalculator.calculate(DividendInput(days = 365, c1 = 40))
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.total))
+        assertEquals(0, result.levels.sumOf { it.participants })
+        assertEquals(5, result.levels.size)
+        assertEquals(true, result.levels.all { it.amount.compareTo(BigDecimal.ZERO) == 0 })
+    }
+
+    @Test
+    fun singleParticipantRateByLevelIsExact() {
+        val expectedDaily = mapOf(
+            "C2" to "0.224", "C3" to "0.48", "C4" to "0.96",
+            "C5" to "1.92", "C6" to "3.20"
+        )
+        val result = DividendCalculator.calculate(
+            DividendInput(days = 1, c2 = 1, c3 = 1, c4 = 1, c5 = 1, c6 = 1)
+        )
+        result.levels.forEach { level ->
+            assertEquals(0, BigDecimal(expectedDaily.getValue(level.level)).compareTo(level.amount))
+        }
+        assertEquals(0, BigDecimal("6.784").compareTo(result.total))
+    }
+
+    @Test
+    fun largeParticipantCountsUseExactDecimalArithmetic() {
+        val result = DividendCalculator.calculate(
+            DividendInput(days = 100, c2 = 100_000, c6 = 100_000)
+        )
+        assertEquals(0, BigDecimal("342400").compareTo(result.total))
+    }
+
+    @Test
+    fun negativeC1AndC6AreRejected() {
+        assertThrows(IllegalArgumentException::class.java) {
+            DividendCalculator.calculate(DividendInput(days = 5, c1 = -1))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            DividendCalculator.calculate(DividendInput(days = 5, c6 = -1))
+        }
+    }
+
 }

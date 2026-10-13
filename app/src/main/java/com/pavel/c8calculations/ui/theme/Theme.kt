@@ -8,7 +8,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 
-private const val LINE_HEIGHT_FACTOR = 0.7f
+private const val LINE_HEIGHT_FACTOR = 1.0f
 
 private val BaseTypography = Typography()
 

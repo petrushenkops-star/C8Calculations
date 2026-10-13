@@ -160,8 +160,8 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
-                .verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text("Расчёт дивидендов", style = MaterialTheme.typography.titleLarge)
 
@@ -258,7 +258,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                 }
             }
             if (showReport) {
-            Text(
+                Text(
                 "Дата, лидер, UID, C1–C6, количество прямых L1 и количество официальных участников C2–C6 заполняются автоматически.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

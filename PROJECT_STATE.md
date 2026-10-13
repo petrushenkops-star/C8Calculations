@@ -5,11 +5,11 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 ## Current release
 - Application Name: С8 Расчеты
 - Package / Application ID: `com.pavel.c8calculations`
-- Version Name: **1.1.12**
-- Version Code: **114**
+- Version Name: **1.1.13**
+- Version Code: **115**
 - Primary Android branch: `main`
 - Stable APK distribution: GitHub Releases, tag `v<versionName>`
-- Planned stable release after CI: `v1.1.12` (until publication, v1.1.11 remains the latest stable APK)
+- Current source release tag: `v1.1.13` (signed APK publication follows successful main CI)
 
 ## Toolchain
 - Android Gradle Plugin: 9.4.0
@@ -74,7 +74,9 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
   - C6: 160 × 2% × days × count
 - Team recognition results feed the dividend screen.
 - Report formatting includes stored team scan data and dividend calculation data.
-- UI uses compact global line spacing introduced in 1.1.10.
+- Dividend screen has a compact result summary, optional formula breakdown and a collapsed report editor.
+- Dividend calculation history is stored locally (up to 50 input snapshots with timestamps); stored results remain independent of later changes to the team.
+- Common screens use tighter margins, but normal text line height is retained for readability (fixes previous 0.7× line-height).
 
 ## Automated tests
 Current unit-test suites include:
@@ -83,6 +85,7 @@ Current unit-test suites include:
 - `Phase4SimulationTest`
 - `Phase6TargetBalanceTest`
 - `DividendCalculatorTest`
+- `DividendHistoryCodecTest`
 - `PdfTeamParserTest`
 - `TeamReportFormatterTest`
 - PDF parser fixture: `app/src/test/resources/team-pdf-labels.tsv`
@@ -105,17 +108,17 @@ CI runs `:app:testDebugUnitTest` before building APKs.
 See `AUTOMATED_BUILD.md` for the current CI/release workflow.
 
 ## iOS
-- iOS work currently lives on the separate long-lived branch `ios-development`.
-- The `ios/` tree and iOS workflows are not part of Android `main` yet.
-- Do not assume Android 1.1.11 features are already synchronized to iOS.
+- Current Android repository only has the `main` branch; historical iOS development is not part of this release.
+- No iOS synchronization is implied by Android changes.
 
 ## Known issues / technical debt
-- iOS and Android histories have diverged and should be normalized before continued parallel development.
+- Any future iOS work needs an explicit project/branch strategy separate from Android releases.
 - Test coverage exists for core calculations and PDF parsing but is not yet comprehensive for all OCR/UI scenarios.
 - GitHub Actions artifact quota was exhausted by historical APKs on 2026-10-06. Old Android artifacts were cleaned; permanent APK storage now uses GitHub Releases. GitHub may take 6-12 hours to recalculate artifact quota.
 
 ## Last completed work
-- Version 1.1.12 (proposed): optional trust-fund income across all three profit forecast modes, daily reports and regression tests.
+- Version 1.1.13: dividend history and compact screens; local preference persistence and unit tests; restored readable line-height.
+- Version 1.1.12: optional trust-fund income across all three profit forecast modes, daily reports and regression tests.
 - Version 1.1.11: persisted team scan + team/dividend data in report.
 - CI migration: stable signed APKs now publish to GitHub Releases; old Android Actions artifacts were cleaned and temporary retention reduced to 3 days.
 
