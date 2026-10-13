@@ -28,6 +28,7 @@ object ProfitSimulationEngine {
                         x = input.x,
                         isVip = input.isVip,
                         l1Count = input.l1Count,
+                        trustFundLevel = input.trustFundLevel,
                     )
                 )
                 val nextLevel = LevelUpgradeEngine.resolveLevel(
@@ -45,6 +46,7 @@ object ProfitSimulationEngine {
                         dailyIncome = daily.dailyIncome,
                         balanceAfter = daily.balanceAfter,
                         levelForNextDay = nextLevel,
+                        trustFundIncome = daily.trustFundIncome,
                     )
                 )
                 balance = daily.balanceAfter

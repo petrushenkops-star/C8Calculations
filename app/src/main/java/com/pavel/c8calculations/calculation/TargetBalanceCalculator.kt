@@ -5,6 +5,7 @@ import com.pavel.c8calculations.model.ProfitSimulationDay
 import com.pavel.c8calculations.model.TargetBalanceInput
 import com.pavel.c8calculations.model.TargetBalanceResult
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 object TargetBalanceCalculator {
     private val WITHHOLDING_RATE = BigDecimal("0.30")
@@ -21,10 +22,13 @@ object TargetBalanceCalculator {
         var balance = input.startingBalance
         var date = input.startDate
         val days = mutableListOf<ProfitSimulationDay>()
+        var reachedAfterSignal = 0
+        var reachedAfterTrustFund = false
 
+        // Crediting order: signals first, then one trust-fund payment at day's end.
+        // If a signal reaches the goal, no fund income is credited on that partial day.
         while (balance < input.targetBalance) {
             require(days.size < MAX_DAYS) { "Target balance was not reached within $MAX_DAYS days" }
-
             val config = LevelConfiguration.forLevel(level)
             val daily = DailyCalculationEngine.calculate(
                 DailyCalculationInput(
@@ -34,55 +38,55 @@ object TargetBalanceCalculator {
                     x = input.x,
                     isVip = input.isVip,
                     l1Count = input.l1Count,
+                    trustFundLevel = input.trustFundLevel,
                 )
             )
-            val nextLevel = LevelUpgradeEngine.resolveLevel(
-                currentLevel = level,
-                balanceAfterDay = daily.balanceAfter,
-                autoUpgradeEnabled = input.autoUpgradeEnabled,
-            )
+            val balanceAfterSignals = balance.add(daily.dailyIncome)
+            val reachedBySignals = balanceAfterSignals >= input.targetBalance
+            val signalsCredited = if (reachedBySignals) {
+                input.targetBalance.subtract(balance)
+                    .divide(daily.incomePerSignal, 0, RoundingMode.CEILING)
+                    .toInt()
+                    .coerceIn(1, daily.signalCount)
+            } else daily.signalCount
+            val signalIncome = daily.incomePerSignal.multiply(signalsCredited.toBigDecimal())
+            val fundIncome = if (reachedBySignals) BigDecimal.ZERO else daily.trustFundIncome
+            val resultingBalance = balance.add(signalIncome).add(fundIncome)
+            val nextLevel = LevelUpgradeEngine.resolveLevel(level, resultingBalance, input.autoUpgradeEnabled)
             days += ProfitSimulationDay(
                 date = date,
                 levelUsed = level,
                 depositUsed = config.deposit,
-                signalCount = daily.signalCount,
+                signalCount = signalsCredited,
                 incomePerSignal = daily.incomePerSignal,
-                dailyIncome = daily.dailyIncome,
-                balanceAfter = daily.balanceAfter,
+                dailyIncome = signalIncome,
+                balanceAfter = resultingBalance,
                 levelForNextDay = nextLevel,
+                trustFundIncome = fundIncome,
             )
-            balance = daily.balanceAfter
+            reachedAfterSignal = signalsCredited
+            reachedAfterTrustFund = !reachedBySignals && resultingBalance >= input.targetBalance
+            balance = resultingBalance
             level = nextLevel
             if (balance < input.targetBalance) date = date.plusDays(1)
         }
 
-        val reachedAfterSignal = if (days.isEmpty()) 0 else {
-            val last = days.last()
-            val balanceBeforeLastDay = last.balanceAfter.subtract(last.dailyIncome)
-            val missing = input.targetBalance.subtract(balanceBeforeLastDay)
-            missing.divide(last.incomePerSignal, 0, java.math.RoundingMode.CEILING).toInt()
-                .coerceIn(1, last.signalCount)
-        }
-
-        val reachedBalance = if (days.isEmpty()) balance else {
-            val last = days.last()
-            last.balanceAfter.subtract(last.dailyIncome).add(last.incomePerSignal.multiply(reachedAfterSignal.toBigDecimal()))
-        }
         val deposit = LevelConfiguration.forLevel(level).deposit
-        val gross = reachedBalance.subtract(deposit)
+        val gross = balance.subtract(deposit)
         return TargetBalanceResult(
             reachedDate = if (days.isEmpty()) input.startDate else days.last().date,
             daysCount = days.size,
             reachedAfterSignal = reachedAfterSignal,
-            totalSignals = days.dropLast(if (days.isEmpty()) 0 else 1).sumOf { it.signalCount } + reachedAfterSignal,
-            totalIncome = if (days.isEmpty()) BigDecimal.ZERO else days.dropLast(1).fold(BigDecimal.ZERO) { acc, day -> acc.add(day.dailyIncome) }.add(days.last().incomePerSignal.multiply(reachedAfterSignal.toBigDecimal())),
-            reachedBalance = reachedBalance,
+            totalSignals = days.sumOf { it.signalCount },
+            totalIncome = days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.totalDailyIncome) },
+            reachedBalance = balance,
             finalLevel = level,
             currentDeposit = deposit,
             grossProfit = gross,
             withholding = gross.multiply(WITHHOLDING_RATE),
             netProfit = gross.multiply(NET_RATE),
             days = days,
+            reachedAfterTrustFund = reachedAfterTrustFund,
         )
     }
 }

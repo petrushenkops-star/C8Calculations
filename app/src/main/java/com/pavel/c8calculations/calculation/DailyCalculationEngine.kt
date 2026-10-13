@@ -14,13 +14,15 @@ object DailyCalculationEngine {
             l1Count = input.l1Count,
         )
         val dailyIncome = config.incomePerSignal.multiply(signals.toBigDecimal())
+        val trustFundIncome = input.trustFundLevel.dailyIncome
 
         return DailyCalculationResult(
             level = input.level,
             signalCount = signals,
             incomePerSignal = config.incomePerSignal,
             dailyIncome = dailyIncome,
-            balanceAfter = input.previousBalance.add(dailyIncome),
+            balanceAfter = input.previousBalance.add(dailyIncome).add(trustFundIncome),
+            trustFundIncome = trustFundIncome,
         )
     }
 }
