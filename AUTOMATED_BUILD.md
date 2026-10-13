@@ -37,9 +37,9 @@ GitHub Release является основным и постоянным мес�
 ## Где скачивать APK
 Открыть репозиторий → **Releases** → нужная версия → **Assets** → `C8Calculations-v<version>-release.apk`.
 
-Для версии 1.1.11:
-- Tag/Release: `v1.1.11`
-- APK: `C8Calculations-v1.1.11-release.apk`
+Для версии 1.1.13 (после успешной публикации):
+- Tag/Release: `v1.1.13`
+- APK: `C8Calculations-v1.1.13-release.apk`
 
 Репозиторий публичный, поэтому Release и его APK доступны без авторизации в GitHub.
 
@@ -70,9 +70,5 @@ Keystore и пароли не должны попадать в git.
 6 октября 2026 старая схема хранения APK в Actions на 30 дней исчерпала artifact quota. Исторические Android artifacts были удалены, а постоянное хранение перенесено в GitHub Releases. GitHub может пересчитывать освобождённую artifact quota 6-12 часов, поэтому сразу после очистки временный artifact может не загрузиться; постоянный GitHub Release при этом остаётся доступным.
 
 ## Текущая проверенная версия
-- Version: 1.1.11 / versionCode 113.
-- Unit tests: SUCCESS.
-- Debug build: SUCCESS.
-- Signed release build: SUCCESS.
-- APK signature verification: SUCCESS.
-- GitHub Release `v1.1.11`: published successfully.
+- До релиза 1.1.13 последняя подтверждённая версия: 1.1.12 / versionCode 114.
+- Для версии 1.1.13 результаты CI и статус подписанного APK проверяются по GitHub Actions и Releases.

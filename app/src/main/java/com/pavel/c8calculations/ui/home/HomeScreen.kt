@@ -22,10 +22,10 @@ fun HomeScreen(onProfit: () -> Unit, onTeam: () -> Unit, onDividend: () -> Unit)
     Scaffold(topBar = { TopAppBar(title = { Text("С8 Расчеты") }) }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
-                .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp) 
+                .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp) 
         ) {
-            Text("Расчёты", style = MaterialTheme.typography.headlineMedium)
+            Text("Расчёты", style = MaterialTheme.typography.headlineSmall)
             Text(
                 "Выберите нужный раздел",
                 style = MaterialTheme.typography.bodyLarge,
@@ -42,20 +42,20 @@ fun HomeScreen(onProfit: () -> Unit, onTeam: () -> Unit, onDividend: () -> Unit)
 private fun HomeActionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
-            Modifier.padding(18.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.padding(12.dp).size(26.dp),
+                    modifier = Modifier.padding(10.dp).size(22.dp),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text("›", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

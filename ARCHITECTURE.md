@@ -108,10 +108,10 @@ C1 is excluded. Current C2-C6 formulas:
 - C5: 96 × 2% × days × count(C5)
 - C6: 160 × 2% × days × count(C6)
 
-Dividend constants/formulas must have one implementation and require tests when changed.
+Dividend constants/formulas must have one implementation and require tests when changed. Dividend history stores calculation inputs rather than derived totals and reuses DividendCalculator when displaying a saved snapshot. Invalid persisted records must not crash the screen.
 
 ## Persistence
-Only persistence required by implemented features should exist. The current Android app persists the latest recognized team scan for reporting through `TeamScanStorage`.
+Only persistence required by implemented features should exist. The current Android app persists the latest recognized team scan for reporting through `TeamScanStorage`, profit inputs and report inputs via local preferences, and up to 50 timestamped dividend input snapshots via private SharedPreferences.
 
 Do not introduce Room/DataStore or other persistence layers solely for architectural symmetry. Add them only when an approved feature needs them.
 
@@ -144,12 +144,7 @@ Bug fixes should add a regression test whenever the affected logic is testable o
 See `AUTOMATED_BUILD.md` for exact workflow behavior.
 
 ## iOS boundary
-iOS currently lives in the separate `ios-development` branch. It contains an `ios/` Swift/SwiftUI codebase and iOS workflows but is not yet synchronized with Android `main`.
-
-Until the repository layout is normalized:
-- do not assume an Android feature exists on iOS;
-- do not modify iOS as a side effect of an Android-only task;
-- iOS synchronization must be an explicit task.
+iOS is not part of the current Android `main` branch. Any future iOS work and synchronization must be separately approved; Android-only changes must not imply iOS parity.
 
 ## Development rules
 - Preserve working behavior unless the user explicitly requests a change.

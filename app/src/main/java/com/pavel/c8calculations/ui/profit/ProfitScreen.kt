@@ -175,8 +175,8 @@ fun ProfitScreen(onBack: () -> Unit) {
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
-                .verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ModeChip(calculationMode == "DATE", "До даты", Modifier.weight(1f)) { calculationMode = "DATE"; dateResultText = null; errorText = null }

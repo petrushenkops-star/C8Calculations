@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -20,6 +21,8 @@ import com.pavel.c8calculations.calculation.TeamReportData
 import com.pavel.c8calculations.calculation.TeamReportFormatter
 import com.pavel.c8calculations.recognition.TeamScanStorage
 import java.math.BigDecimal
+import java.time.Instant
+import java.time.ZoneId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -34,7 +37,21 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
         context.getSharedPreferences("team_report", android.content.Context.MODE_PRIVATE)
     }
 
-    var days by remember { mutableStateOf("10") }
+    val dividendPreferences = remember {
+        context.getSharedPreferences("dividend_parameters", android.content.Context.MODE_PRIVATE)
+    }
+    var days by remember { mutableStateOf(dividendPreferences.getString("days", "10") ?: "10") }
+    var history by remember { mutableStateOf(DividendHistoryStorage.load(context)) }
+    var showHistory by remember { mutableStateOf(false) }
+    var showAllHistory by remember { mutableStateOf(false) }
+    var confirmHistoryClear by remember { mutableStateOf(false) }
+    var showReport by remember { mutableStateOf(false) }
+    var viewedHistoryAt by remember { mutableStateOf<Long?>(null) }
+    var historyError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(days) {
+        dividendPreferences.edit().putString("days", days).apply()
+    }
     val c1 = preferences.getInt("c1", 0)
     val c2 = preferences.getInt("c2", 0)
     val c3 = preferences.getInt("c3", 0)
@@ -71,13 +88,18 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
             .apply()
     }
 
-    fun dividendResult(): DividendResult = DividendCalculator.calculate(
-        DividendInput(days.toInt(), 0, c2, c3, c4, c5, c6)
-    )
+    fun dividendInput(): DividendInput = DividendInput(days.toInt(), c1, c2, c3, c4, c5, c6)
+    fun dividendResult(): DividendResult = DividendCalculator.calculate(dividendInput())
 
     fun calculate() {
         try {
             result = dividendResult()
+            viewedHistoryAt = null
+            historyError = null
+            // Only an explicit calculation is added to history, not report generation.
+            runCatching { DividendHistoryStorage.add(context, dividendInput()) }
+                .onSuccess { history = it }
+                .onFailure { historyError = "Не удалось сохранить историю расчёта" }
             errorText = null
         } catch (_: NumberFormatException) {
             result = null
@@ -101,6 +123,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
 
         errorText = null
         result = calculatedDividends
+        viewedHistoryAt = null
         reportDividendResult = calculatedDividends
         reportScanBitmap = TeamScanStorage.load(context)
 
@@ -138,20 +161,22 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
-                .verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("Расчёт дивидендов", style = MaterialTheme.typography.headlineSmall)
-            Text(
-                "Расчёт по сохранённой структуре команды",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("Расчёт дивидендов", style = MaterialTheme.typography.titleLarge)
 
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Команда · $totalParticipants участников", style = MaterialTheme.typography.titleMedium)
-                    Text("C2 $c2; C3 $c3; C4 $c4; C5 $c5; C6 $c6")
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Команда · $totalParticipants участников",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onEditTeam) { Text("Изменить") }
+                    }
+                    Text("С2 $c2 · С3 $c3 · С4 $c4 · С5 $c5 · С6 $c6")
                 }
             }
             if (totalParticipants == 0) {
@@ -160,21 +185,81 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            OutlinedButton(onClick = onEditTeam, modifier = Modifier.fillMaxWidth()) {
-                Text("Изменить структуру")
-            }
-            IntegerField("Количество дней", days) { days = it }
-
-            Button(onClick = ::calculate, modifier = Modifier.fillMaxWidth()) {
-                Text("Рассчитать")
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.weight(1f)) {
+                    IntegerField("Количество дней", days) { days = it }
+                }
+                Button(onClick = ::calculate, modifier = Modifier.heightIn(min = 56.dp)) {
+                    Text("Рассчитать")
+                }
             }
 
             errorText?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            historyError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            viewedHistoryAt?.let { timestamp ->
+                Text(
+                    "Просмотр сохранённого расчёта от ${formatHistoryDate(timestamp)}. " +
+                        "Текущие данные команды не изменены.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             result?.let { DividendResultCard(it) }
 
             HorizontalDivider()
-            Text("Отчёт", style = MaterialTheme.typography.headlineSmall)
-            Text(
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("История · ${history.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = { showHistory = !showHistory }) {
+                    Text(if (showHistory) "Скрыть" else "Показать")
+                }
+            }
+            if (showHistory) {
+                if (history.isEmpty()) {
+                    Text("История пока пуста. Нажмите «Рассчитать», чтобы сохранить первый расчёт.")
+                } else {
+                    history.take(if (showAllHistory) DividendHistoryCodec.MAX_ENTRIES else 8).forEach { entry ->
+                        val savedResult = remember(entry) { DividendCalculator.calculate(entry.input) }
+                        Card(Modifier.fillMaxWidth()) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(formatHistoryDate(entry.createdAtMillis), style = MaterialTheme.typography.labelMedium)
+                                    Text("${entry.input.days} дн. · ${savedResult.levels.sumOf { it.participants }} участников")
+                                    Text("${format(savedResult.total)} USDT", style = MaterialTheme.typography.titleMedium)
+                                }
+                                TextButton(onClick = {
+                                    result = savedResult
+                                    viewedHistoryAt = entry.createdAtMillis
+                                    errorText = null
+                                }) { Text("Открыть") }
+                            }
+                        }
+                    }
+                    if (history.size > 8) {
+                        TextButton(onClick = { showAllHistory = !showAllHistory }) {
+                            Text(if (showAllHistory) "Показать меньше" else "Показать ещё (${history.size - 8})")
+                        }
+                    }
+                    TextButton(onClick = { confirmHistoryClear = true }) { Text("Очистить историю") }
+                }
+            }
+
+            HorizontalDivider()
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Отчёт", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = { showReport = !showReport }) {
+                    Text(if (showReport) "Скрыть" else "Развернуть")
+                }
+            }
+            if (showReport) {
+                Text(
                 "Дата, лидер, UID, C1–C6, количество прямых L1 и количество официальных участников C2–C6 заполняются автоматически.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -244,7 +329,28 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                     DividendResultCard(dividends, compact = true)
                 }
             }
+            } // showReport
         }
+    }
+
+    if (confirmHistoryClear) {
+        AlertDialog(
+            onDismissRequest = { confirmHistoryClear = false },
+            title = { Text("Очистить историю?") },
+            text = { Text("Все сохранённые расчёты дивидендов будут удалены. Текущая команда останется без изменений.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    DividendHistoryStorage.clear(context)
+                    history = emptyList()
+                    viewedHistoryAt = null
+                    showAllHistory = false
+                    confirmHistoryClear = false
+                }) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmHistoryClear = false }) { Text("Отмена") }
+            },
+        )
     }
 }
 
@@ -286,32 +392,49 @@ private fun ReportTextField(label: String, value: String, onValueChange: (String
 
 @Composable
 private fun DividendResultCard(result: DividendResult, compact: Boolean = false) {
-    val bodyStyle = if (compact) {
-        MaterialTheme.typography.bodyLarge.copy(
-            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 0.7f,
-        )
-    } else {
-        MaterialTheme.typography.bodyLarge
-    }
+    var showFormulas by remember(result, compact) { mutableStateOf(compact) }
+    val activeLevels = result.levels.filter { it.participants > 0 }
+    val participantCount = result.levels.sumOf { it.participants }
+    val perDay = result.total.divide(BigDecimal(result.days))
 
     Card(Modifier.fillMaxWidth()) {
         Column(
-            Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp),
+            Modifier.padding(if (compact) 12.dp else 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("Итого", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Итого за ${result.days} дн.", style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${format(result.total)} USDT", style = MaterialTheme.typography.headlineMedium)
+            Text("${participantCount} участников · ${format(perDay)} USDT в день",
+                style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
-            Text("Расшифровка", style = MaterialTheme.typography.titleMedium)
-            result.levels.forEach { item ->
-                Text(
-                    "${item.level}: ${format(item.baseAmount)} × 0,02 × ${result.days} × ${item.participants} = ${format(item.amount)} USDT",
-                    style = bodyStyle,
-                )
+            if (activeLevels.isEmpty()) {
+                Text("Нет участников С2–С6 для начисления дивидендов.")
+            }
+            activeLevels.forEach { item ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${item.level} · ${item.participants} чел.", Modifier.weight(1f))
+                    Text("${format(item.amount)} USDT")
+                }
+            }
+            TextButton(onClick = { showFormulas = !showFormulas }) {
+                Text(if (showFormulas) "Скрыть формулы" else "Показать формулы")
+            }
+            if (showFormulas) {
+                result.levels.forEach { item ->
+                    Text(
+                        "${item.level}: ${format(item.baseAmount)} × 2% × ${result.days} × ${item.participants} = ${format(item.amount)} USDT",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         }
     }
 }
+
+private fun formatHistoryDate(timestamp: Long): String =
+    Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
 
 private fun format(value: BigDecimal): String {
     val plain = value.stripTrailingZeros().toPlainString()
