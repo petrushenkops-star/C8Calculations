@@ -5,11 +5,11 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 ## Current release
 - Application Name: С8 Расчеты
 - Package / Application ID: `com.pavel.c8calculations`
-- Version Name: **1.1.13**
-- Version Code: **115**
+- Version Name: **1.1.14**
+- Version Code: **116**
 - Primary Android branch: `main`
 - Stable APK distribution: GitHub Releases, tag `v<versionName>`
-- Current source release tag: `v1.1.13` (signed APK publication follows successful main CI)
+- Latest confirmed stable APK: `v1.1.13`; planned signed APK: `v1.1.14` after main CI.
 
 ## Toolchain
 - Android Gradle Plugin: 9.4.0
@@ -74,7 +74,7 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
   - C6: 160 × 2% × days × count
 - Team recognition results feed the dividend screen.
 - Report formatting includes stored team scan data and dividend calculation data.
-- Dividend screen has a compact result summary, optional formula breakdown and a collapsed report editor.
+- Dividend screen shows the classic total + full calculation breakdown from 1.1.12, a collapsed report editor and a separate history of calculations.
 - Dividend calculation history is stored locally (up to 50 input snapshots with timestamps); stored results remain independent of later changes to the team.
 - Common screens use tighter margins, but normal text line height is retained for readability (fixes previous 0.7× line-height).
 
@@ -117,6 +117,7 @@ See `AUTOMATED_BUILD.md` for the current CI/release workflow.
 - GitHub Actions artifact quota was exhausted by historical APKs on 2026-10-06. Old Android artifacts were cleaned; permanent APK storage now uses GitHub Releases. GitHub may take 6-12 hours to recalculate artifact quota.
 
 ## Last completed work
+- Version 1.1.14 (planned): restore the version 1.1.12 dividend result/formula layout while preserving the 1.1.13 history; add colons to report field labels and normalize initial height of field 13. No financial rules changed.
 - Version 1.1.13: dividend history and compact screens; local preference persistence and unit tests; restored readable line-height.
 - Version 1.1.12: optional trust-fund income across all three profit forecast modes, daily reports and regression tests.
 - Version 1.1.11: persisted team scan + team/dividend data in report.
