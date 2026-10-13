@@ -123,6 +123,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
 
         errorText = null
         result = calculatedDividends
+        viewedHistoryAt = null
         reportDividendResult = calculatedDividends
         reportScanBitmap = TeamScanStorage.load(context)
 
@@ -341,6 +342,7 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                 TextButton(onClick = {
                     DividendHistoryStorage.clear(context)
                     history = emptyList()
+                    viewedHistoryAt = null
                     showAllHistory = false
                     confirmHistoryClear = false
                 }) { Text("Удалить") }

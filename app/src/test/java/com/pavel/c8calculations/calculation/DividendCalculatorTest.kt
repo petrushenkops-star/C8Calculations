@@ -71,7 +71,7 @@ class DividendCalculatorTest {
         val result = DividendCalculator.calculate(
             DividendInput(days = 100, c2 = 100_000, c6 = 100_000)
         )
-        assertEquals(0, BigDecimal("342400").compareTo(result.total))
+        assertEquals(0, BigDecimal("34240000").compareTo(result.total))
     }
 
     @Test
