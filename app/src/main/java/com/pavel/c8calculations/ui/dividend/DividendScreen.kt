@@ -289,12 +289,12 @@ fun DividendScreen(onBack: () -> Unit, onEditTeam: () -> Unit) {
                 )
             }
 
-            ReportNumberField("1. Совещаний", meetings) { meetings = it }
-            ReportNumberField("8. Сержант", sergeant) { sergeant = it }
-            ReportNumberField("9. Капрал", corporal) { corporal = it }
-            ReportNumberField("12. Корпоратив", corporate) { corporate = it }
-            ReportTextField("13. Проблемы команды", teamProblems) { teamProblems = it }
-            ReportTextField("14. План на ближайшие 10 дней", tenDayPlan) { tenDayPlan = it }
+            ReportNumberField("1. Совещаний:", meetings) { meetings = it }
+            ReportNumberField("8. Сержант:", sergeant) { sergeant = it }
+            ReportNumberField("9. Капрал:", corporal) { corporal = it }
+            ReportNumberField("12. Корпоратив:", corporate) { corporate = it }
+            ReportTextField("13. Проблемы команды:", teamProblems, minLines = 1) { teamProblems = it }
+            ReportTextField("14. План на ближайшие 10 дней:", tenDayPlan) { tenDayPlan = it }
 
             Button(
                 onClick = ::formReport,
@@ -379,12 +379,12 @@ private fun ReportNumberField(label: String, value: String, onValueChange: (Stri
 }
 
 @Composable
-private fun ReportTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun ReportTextField(label: String, value: String, minLines: Int = 2, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        minLines = 2,
+        minLines = minLines,
         maxLines = 5,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -392,45 +392,33 @@ private fun ReportTextField(label: String, value: String, onValueChange: (String
 
 @Composable
 private fun DividendResultCard(result: DividendResult, compact: Boolean = false) {
-    var showFormulas by remember(result, compact) { mutableStateOf(compact) }
-    val activeLevels = result.levels.filter { it.participants > 0 }
-    val participantCount = result.levels.sumOf { it.participants }
-    val perDay = result.total.divide(BigDecimal(result.days))
+    val bodyStyle = if (compact) {
+        MaterialTheme.typography.bodyLarge.copy(
+            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 0.7f,
+        )
+    } else {
+        MaterialTheme.typography.bodyLarge
+    }
 
     Card(Modifier.fillMaxWidth()) {
         Column(
-            Modifier.padding(if (compact) 12.dp else 14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp),
         ) {
-            Text("Итого за ${result.days} дн.", style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Итого", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${format(result.total)} USDT", style = MaterialTheme.typography.headlineMedium)
-            Text("${participantCount} участников · ${format(perDay)} USDT в день",
-                style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
-            if (activeLevels.isEmpty()) {
-                Text("Нет участников С2–С6 для начисления дивидендов.")
-            }
-            activeLevels.forEach { item ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("${item.level} · ${item.participants} чел.", Modifier.weight(1f))
-                    Text("${format(item.amount)} USDT")
-                }
-            }
-            TextButton(onClick = { showFormulas = !showFormulas }) {
-                Text(if (showFormulas) "Скрыть формулы" else "Показать формулы")
-            }
-            if (showFormulas) {
-                result.levels.forEach { item ->
-                    Text(
-                        "${item.level}: ${format(item.baseAmount)} × 2% × ${result.days} × ${item.participants} = ${format(item.amount)} USDT",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
+            Text("Расшифровка", style = MaterialTheme.typography.titleMedium)
+            result.levels.forEach { item ->
+                Text(
+                    "${item.level}: ${format(item.baseAmount)} × 0,02 × ${result.days} × ${item.participants} = ${format(item.amount)} USDT",
+                    style = bodyStyle,
+                )
             }
         }
     }
 }
+
 
 private fun formatHistoryDate(timestamp: Long): String =
     Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault())
