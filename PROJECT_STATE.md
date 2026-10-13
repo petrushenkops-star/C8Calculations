@@ -5,11 +5,11 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 ## Current release
 - Application Name: С8 Расчеты
 - Package / Application ID: `com.pavel.c8calculations`
-- Version Name: **1.1.11**
-- Version Code: **113**
+- Version Name: **1.1.12**
+- Version Code: **114**
 - Primary Android branch: `main`
 - Stable APK distribution: GitHub Releases, tag `v<versionName>`
-- Current stable release: `v1.1.11`
+- Planned stable release after CI: `v1.1.12` (until publication, v1.1.11 remains the latest stable APK)
 
 ## Toolchain
 - Android Gradle Plugin: 9.4.0
@@ -49,6 +49,8 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 - Optional automatic C1→C6 level upgrades; new level applies from the next calendar day and balance is not reduced.
 - Detailed day-by-day calculation report is available.
 - Net profit can be evaluated in USDT and converted to RUB using a user-entered USDT/RUB rate.
+- Optional daily trust-fund income: NONE=0, VIP1=35.7, VIP2=120, VIP3=217, VIP4=500 USDT. This is independent of the VIP signal bonus and is credited to the same balance after daily signals; commission and upgrades consider the combined balance.
+- Target modes can report a target reached after the end-of-day trust-fund credit instead of a particular signal.
 
 ## Implemented — Team recognition
 - Image recognition uses ML Kit Text Recognition.
@@ -113,6 +115,7 @@ See `AUTOMATED_BUILD.md` for the current CI/release workflow.
 - GitHub Actions artifact quota was exhausted by historical APKs on 2026-10-06. Old Android artifacts were cleaned; permanent APK storage now uses GitHub Releases. GitHub may take 6-12 hours to recalculate artifact quota.
 
 ## Last completed work
+- Version 1.1.12 (proposed): optional trust-fund income across all three profit forecast modes, daily reports and regression tests.
 - Version 1.1.11: persisted team scan + team/dividend data in report.
 - CI migration: stable signed APKs now publish to GitHub Releases; old Android Actions artifacts were cleaned and temporary retention reduced to 3 days.
 

@@ -12,6 +12,7 @@ data class TargetNetProfitInput(
     val x: Int = 0,
     val isVip: Boolean = false,
     val l1Count: Int = 0,
+    val trustFundLevel: TrustFundLevel = TrustFundLevel.NONE,
 )
 
 data class TargetNetProfitResult(
@@ -27,4 +28,5 @@ data class TargetNetProfitResult(
     val withholding: BigDecimal,
     val netProfit: BigDecimal,
     val days: List<ProfitSimulationDay>,
+    val reachedAfterTrustFund: Boolean = false,
 )

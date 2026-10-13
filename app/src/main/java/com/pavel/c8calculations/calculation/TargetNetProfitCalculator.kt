@@ -37,14 +37,16 @@ object TargetNetProfitCalculator {
             require(days.size < MAX_DAYS) { "Target net profit was not reached within $MAX_DAYS days" }
             val config = LevelConfiguration.forLevel(level)
             val daily = DailyCalculationEngine.calculate(
-                DailyCalculationInput(level, date.dayOfWeek, balance, input.x, input.isVip, input.l1Count)
+                DailyCalculationInput(level, date.dayOfWeek, balance, input.x, input.isVip, input.l1Count, input.trustFundLevel)
             )
             val nextLevel = LevelUpgradeEngine.resolveLevel(level, daily.balanceAfter, input.autoUpgradeEnabled)
 
             var signalBalance = balance
             for (signal in 1..daily.signalCount) {
                 signalBalance = signalBalance.add(daily.incomePerSignal)
-                val levelForProfit = if (signal == daily.signalCount) nextLevel else level
+                val levelForProfit = if (signal == daily.signalCount) {
+                    LevelUpgradeEngine.resolveLevel(level, signalBalance, input.autoUpgradeEnabled)
+                } else level
                 val candidateNet = netProfit(signalBalance, levelForProfit)
                 if (candidateNet >= input.targetNetProfit) {
                     val reachedDeposit = LevelConfiguration.forLevel(levelForProfit).deposit
@@ -56,7 +58,7 @@ object TargetNetProfitCalculator {
                         daysCount = resultDays.size,
                         reachedAfterSignal = signal,
                         totalSignals = days.sumOf { it.signalCount } + signal,
-                        totalIncome = days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.dailyIncome) }.add(daily.incomePerSignal.multiply(signal.toBigDecimal())),
+                        totalIncome = days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.totalDailyIncome) }.add(daily.incomePerSignal.multiply(signal.toBigDecimal())),
                         reachedBalance = signalBalance,
                         finalLevel = levelForProfit,
                         currentDeposit = reachedDeposit,
@@ -68,7 +70,33 @@ object TargetNetProfitCalculator {
                 }
             }
 
-            days += ProfitSimulationDay(date, level, config.deposit, daily.signalCount, daily.incomePerSignal, daily.dailyIncome, daily.balanceAfter, nextLevel)
+            // Daily trust-fund income is credited only after all signals.
+            if (daily.trustFundIncome.signum() > 0 && netProfit(daily.balanceAfter, nextLevel) >= input.targetNetProfit) {
+                val reachedDeposit = LevelConfiguration.forLevel(nextLevel).deposit
+                val gross = daily.balanceAfter.subtract(reachedDeposit)
+                val completedDay = ProfitSimulationDay(
+                    date, level, config.deposit, daily.signalCount, daily.incomePerSignal,
+                    daily.dailyIncome, daily.balanceAfter, nextLevel, daily.trustFundIncome
+                )
+                val resultDays = days + completedDay
+                return TargetNetProfitResult(
+                    reachedDate = date,
+                    daysCount = resultDays.size,
+                    reachedAfterSignal = daily.signalCount,
+                    totalSignals = resultDays.sumOf { it.signalCount },
+                    totalIncome = resultDays.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.totalDailyIncome) },
+                    reachedBalance = daily.balanceAfter,
+                    finalLevel = nextLevel,
+                    currentDeposit = reachedDeposit,
+                    grossProfit = gross,
+                    withholding = gross.multiply(WITHHOLDING_RATE),
+                    netProfit = gross.multiply(NET_RATE),
+                    days = resultDays,
+                    reachedAfterTrustFund = true,
+                )
+            }
+
+            days += ProfitSimulationDay(date, level, config.deposit, daily.signalCount, daily.incomePerSignal, daily.dailyIncome, daily.balanceAfter, nextLevel, daily.trustFundIncome)
             balance = daily.balanceAfter
             level = nextLevel
             date = date.plusDays(1)

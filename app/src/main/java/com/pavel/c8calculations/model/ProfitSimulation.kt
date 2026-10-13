@@ -12,6 +12,7 @@ data class ProfitSimulationInput(
     val x: Int = 0,
     val isVip: Boolean = false,
     val l1Count: Int = 0,
+    val trustFundLevel: TrustFundLevel = TrustFundLevel.NONE,
 )
 
 data class ProfitSimulationDay(
@@ -23,7 +24,10 @@ data class ProfitSimulationDay(
     val dailyIncome: BigDecimal,
     val balanceAfter: BigDecimal,
     val levelForNextDay: ParticipantLevel,
-)
+    val trustFundIncome: BigDecimal = BigDecimal.ZERO,
+) {
+    val totalDailyIncome: BigDecimal get() = dailyIncome.add(trustFundIncome)
+}
 
 data class ProfitSimulationResult(
     val days: List<ProfitSimulationDay>,

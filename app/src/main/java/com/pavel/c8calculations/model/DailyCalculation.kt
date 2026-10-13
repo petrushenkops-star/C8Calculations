@@ -10,6 +10,7 @@ data class DailyCalculationInput(
     val x: Int = 0,
     val isVip: Boolean = false,
     val l1Count: Int = 0,
+    val trustFundLevel: TrustFundLevel = TrustFundLevel.NONE,
 )
 
 data class DailyCalculationResult(
@@ -18,4 +19,7 @@ data class DailyCalculationResult(
     val incomePerSignal: BigDecimal,
     val dailyIncome: BigDecimal,
     val balanceAfter: BigDecimal,
-)
+    val trustFundIncome: BigDecimal = BigDecimal.ZERO,
+) {
+    val totalDailyIncome: BigDecimal get() = dailyIncome.add(trustFundIncome)
+}
