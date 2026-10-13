@@ -2,6 +2,7 @@ package com.pavel.c8calculations.ui.profit
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -26,6 +27,7 @@ import com.pavel.c8calculations.model.ProfitSimulationDay
 import com.pavel.c8calculations.model.ProfitSimulationInput
 import com.pavel.c8calculations.model.TargetBalanceInput
 import com.pavel.c8calculations.model.TargetNetProfitInput
+import com.pavel.c8calculations.model.TrustFundLevel
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -52,6 +54,12 @@ fun ProfitScreen(onBack: () -> Unit) {
     var endDate by remember { mutableStateOf(preferences.getString("endDate", LocalDate.now().plusDays(30).toString()) ?: LocalDate.now().plusDays(30).toString()) }
     var x by remember { mutableStateOf(preferences.getString("leaderSignals", "0") ?: "0") }
     var vip by remember { mutableStateOf(preferences.getBoolean("vip", false)) }
+    var trustFundLevel by remember {
+        mutableStateOf(
+            runCatching { TrustFundLevel.valueOf(preferences.getString("trustFundLevel", TrustFundLevel.NONE.name)!!) }
+                .getOrDefault(TrustFundLevel.NONE)
+        )
+    }
     var l1AtLeast10 by remember { mutableStateOf(preferences.getBoolean("l1AtLeast10", false)) }
     var autoUpgrade by remember { mutableStateOf(preferences.getBoolean("autoUpgrade", true)) }
     var targetBalance by remember { mutableStateOf(preferences.getString("targetBalance", "1000") ?: "1000") }
@@ -66,7 +74,7 @@ fun ProfitScreen(onBack: () -> Unit) {
     var detailDays by remember { mutableStateOf<List<ProfitSimulationDay>>(emptyList()) }
     var showDetails by remember { mutableStateOf(false) }
 
-    LaunchedEffect(level, balance, startDate, endDate, x, vip, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, targetNetProfitCurrency, usdtRubRate, calculationMode) {
+    LaunchedEffect(level, balance, startDate, endDate, x, vip, trustFundLevel, l1AtLeast10, autoUpgrade, targetBalance, targetNetProfit, targetNetProfitCurrency, usdtRubRate, calculationMode) {
         preferences.edit()
             .putString("level", level.name)
             .putString("balance", balance)
@@ -74,6 +82,7 @@ fun ProfitScreen(onBack: () -> Unit) {
             .putString("endDate", endDate)
             .putString("leaderSignals", x)
             .putBoolean("vip", vip)
+            .putString("trustFundLevel", trustFundLevel.name)
             .putBoolean("l1AtLeast10", l1AtLeast10)
             .putBoolean("autoUpgrade", autoUpgrade)
             .putString("targetBalance", targetBalance)
@@ -94,8 +103,8 @@ fun ProfitScreen(onBack: () -> Unit) {
             val rubRate = BigDecimal(usdtRubRate.trim().replace(',', '.'))
             require(rubRate.signum() > 0) { "Курс USDT должен быть больше 0" }
             if (calculationMode == "BALANCE") {
-                val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
-                targetResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
+                val targetResult = TargetBalanceCalculator.calculate(TargetBalanceInput(from, level, BigDecimal(balance.trim().replace(',', '.')), BigDecimal(targetBalance.trim().replace(',', '.')), autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0, trustFundLevel))
+                targetResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate, targetResult.reachedAfterTrustFund, targetResult.days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.trustFundIncome) })
                 detailDays = targetResult.days
                 errorText = null
                 return
@@ -106,8 +115,8 @@ fun ProfitScreen(onBack: () -> Unit) {
                 val targetInUsdt = if (targetNetProfitCurrency == "RUB")
                     enteredTarget.divide(rubRate, 8, RoundingMode.HALF_UP)
                 else enteredTarget
-                val targetResult = TargetNetProfitCalculator.calculate(TargetNetProfitInput(from, level, BigDecimal(balance.trim().replace(',', '.')), targetInUsdt, autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0))
-                netProfitResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate)
+                val targetResult = TargetNetProfitCalculator.calculate(TargetNetProfitInput(from, level, BigDecimal(balance.trim().replace(',', '.')), targetInUsdt, autoUpgrade, x.toInt(), vip, if (l1AtLeast10) 10 else 0, trustFundLevel))
+                netProfitResultText = formatTargetResult(targetResult.reachedDate, targetResult.reachedAfterSignal, targetResult.daysCount, targetResult.totalSignals, targetResult.totalIncome, targetResult.reachedBalance, targetResult.finalLevel.name, targetResult.currentDeposit, targetResult.grossProfit, targetResult.withholding, targetResult.netProfit, rubRate, targetResult.reachedAfterTrustFund, targetResult.days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.trustFundIncome) })
                 detailDays = targetResult.days
                 errorText = null
                 return
@@ -125,12 +134,17 @@ fun ProfitScreen(onBack: () -> Unit) {
                     x = x.toInt(),
                     isVip = vip,
                     l1Count = if (l1AtLeast10) 10 else 0,
+                    trustFundLevel = trustFundLevel,
                 )
             )
             detailDays = result.days
             dateResultText = buildString {
                 appendLine("Дней: $days")
                 appendLine("Итоговый уровень: ${result.finalLevel}")
+                if (trustFundLevel != TrustFundLevel.NONE) {
+                    val trustIncome = result.days.fold(BigDecimal.ZERO) { acc, day -> acc.add(day.trustFundIncome) }
+                    appendLine("Доход от трастового фонда: ${formatNumber(trustIncome)} USDT")
+                }
                 appendLine("Ожидаемый баланс: ${formatNumber(result.expectedBalance)} USDT")
                 appendLine("Депозит уровня: ${formatNumber(result.currentDeposit)} USDT")
                 appendLine("Прибыль до удержания: ${formatNumber(result.grossProfit)} USDT")
@@ -237,6 +251,24 @@ fun ProfitScreen(onBack: () -> Unit) {
                 Text("VIP")
                 Switch(checked = vip, onCheckedChange = { vip = it })
             }
+            Text("Трастовый фонд", style = MaterialTheme.typography.titleSmall)
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                TrustFundLevel.entries.forEach { item ->
+                    FilterChip(
+                        selected = trustFundLevel == item,
+                        onClick = { trustFundLevel = item },
+                        label = { Text(if (item == TrustFundLevel.NONE) "Нет" else item.name) }
+                    )
+                }
+            }
+            Text(
+                "Доход фонда: ${formatNumber(trustFundLevel.dailyIncome)} USDT в день",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Автопереход уровней")
                 Switch(checked = autoUpgrade, onCheckedChange = { autoUpgrade = it })
@@ -296,13 +328,19 @@ private fun formatTargetResult(
     reachedDate: LocalDate, reachedAfterSignal: Int, daysCount: Int, totalSignals: Int,
     totalIncome: BigDecimal, reachedBalance: BigDecimal, finalLevel: String,
     currentDeposit: BigDecimal, grossProfit: BigDecimal, withholding: BigDecimal,
-    netProfit: BigDecimal, rubRate: BigDecimal
+    netProfit: BigDecimal, rubRate: BigDecimal,
+    reachedAfterTrustFund: Boolean, trustFundIncome: BigDecimal
 ): String = buildString {
     appendLine("Дата достижения: $reachedDate")
-    appendLine("После сигнала: $reachedAfterSignal")
+    if (reachedAfterTrustFund) {
+        appendLine("После начисления трастового фонда")
+    } else {
+        appendLine("После сигнала: $reachedAfterSignal")
+    }
     appendLine("Календарных дней: $daysCount")
     appendLine("Сигналов: $totalSignals")
     appendLine("Доход за период: ${formatNumber(totalIncome)} USDT")
+    if (trustFundIncome.signum() > 0) appendLine("Доход от трастового фонда: ${formatNumber(trustFundIncome)} USDT")
     appendLine("Достигнутый баланс: ${formatNumber(reachedBalance)} USDT")
     appendLine("Итоговый уровень: $finalLevel")
     appendLine("Депозит уровня: ${formatNumber(currentDeposit)} USDT")
@@ -384,7 +422,11 @@ private fun DailyDetails(days: List<ProfitSimulationDay>) {
                     Text("${day.date} • ${day.levelUsed}${transition}", style = MaterialTheme.typography.titleSmall)
                     Text("Сигналов: ${day.signalCount}")
                     Text("Доход за сигнал: ${formatNumber(day.incomePerSignal)} USDT")
-                    Text("Доход за день: ${formatNumber(day.dailyIncome)} USDT")
+                    if (day.trustFundIncome.signum() > 0) {
+                        Text("Доход от сигналов: ${formatNumber(day.dailyIncome)} USDT")
+                        Text("Трастовый фонд: ${formatNumber(day.trustFundIncome)} USDT")
+                    }
+                    Text("Доход за день: ${formatNumber(day.totalDailyIncome)} USDT")
                     Text("Баланс: ${formatNumber(day.balanceAfter)} USDT")
                 }
             }
