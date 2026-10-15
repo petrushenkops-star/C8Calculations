@@ -74,7 +74,7 @@ UI owns presentation and user input state. Calculation and recognition rules mus
 - Auto-upgrade never subtracts the new deposit from balance.
 - When several thresholds are crossed, the maximum reachable level may be selected.
 - The same daily calculation rules must be reused by all forecast/target modes.
-- Optional TrustFundLevel is independent of the existing VIP signal bonus; its income is credited once per calendar day after all signals to the same balance. In target modes the calculation stops on the first signal that reaches the target, or following the fund credit if that reaches the target. Commission and level upgrades use the combined resulting balance.
+- Optional TrustFundLevel is independent of the existing VIP signal bonus, and is enabled by a separate switch (levels VIP1–VIP6). NONE=0, VIP1=35.7, VIP2=120, VIP3=217, VIP4=500, VIP5=1060, VIP6=1900 USDT per day. When disabled the active level is NONE, but the selected level is preserved for re-enabling; existing saved non-NONE selections migrate to enabled. Income is credited once per calendar day after all signals to the same balance. In target modes the calculation stops on the first signal that reaches the target, or following the fund credit if that reaches the target. Commission and level upgrades use the combined resulting balance.
 
 Any formula or level-rule change requires corresponding unit tests.
 

@@ -5,11 +5,11 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 ## Current release
 - Application Name: С8 Расчеты
 - Package / Application ID: `com.pavel.c8calculations`
-- Version Name: **1.1.15**
-- Version Code: **117**
+- Version Name: **1.1.16**
+- Version Code: **118**
 - Primary Android branch: `main`
 - Stable APK distribution: GitHub Releases, tag `v<versionName>`
-- Latest confirmed stable APK: `v1.1.14`; planned signed APK: `v1.1.15` after main CI.
+- Latest confirmed stable APK: `v1.1.15`; planned signed APK: `v1.1.16` after main CI.
 
 ## Toolchain
 - Android Gradle Plugin: 9.4.0
@@ -49,7 +49,7 @@ This file is the current state summary for ChatGPT/Codex and maintainers. Keep i
 - Optional automatic C1→C6 level upgrades; new level applies from the next calendar day and balance is not reduced.
 - Detailed day-by-day calculation report is available.
 - Net profit can be evaluated in USDT and converted to RUB using a user-entered USDT/RUB rate.
-- Optional daily trust-fund income: NONE=0, VIP1=35.7, VIP2=120, VIP3=217, VIP4=500 USDT. This is independent of the VIP signal bonus and is credited to the same balance after daily signals; commission and upgrades consider the combined balance.
+- Optional daily trust-fund income: NONE=0, VIP1=35.7, VIP2=120, VIP3=217, VIP4=500, VIP5=1060, VIP6=1900 USDT. An independent switch enables/disables the fund without losing its selected level. Previously saved VIP1–VIP4 selections remain active after upgrade. Income is credited to the same balance after daily signals; commission and upgrades consider the combined balance.
 - Target modes can report a target reached after the end-of-day trust-fund credit instead of a particular signal.
 
 ## Implemented — Team recognition
@@ -117,6 +117,7 @@ See `AUTOMATED_BUILD.md` for the current CI/release workflow.
 - GitHub Actions artifact quota was exhausted by historical APKs on 2026-10-06. Old Android artifacts were cleaned; permanent APK storage now uses GitHub Releases. GitHub may take 6-12 hours to recalculate artifact quota.
 
 ## Last completed work
+- Version 1.1.16 (planned): add VIP5 and VIP6 trust fund incomes and a separate persisted enable/disable switch, preserving old selections and independent VIP signal bonus.
 - Version 1.1.15 (planned): reduce the always-visible empty «13. Проблемы команды:» label to the same bodySmall size as a filled numeric field label. Only this field is changed; dividends, history and report data are unchanged.
 - Version 1.1.14 (planned): restore the version 1.1.12 dividend result/formula layout while preserving the 1.1.13 history; add colons to report field labels and normalize initial height of field 13. No financial rules changed.
 - Version 1.1.13: dividend history and compact screens; local preference persistence and unit tests; restored readable line-height.
