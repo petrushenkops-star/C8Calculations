@@ -9,4 +9,9 @@ enum class TrustFundLevel(val dailyIncome: BigDecimal) {
     VIP2(BigDecimal("120")),
     VIP3(BigDecimal("217")),
     VIP4(BigDecimal("500")),
+    VIP5(BigDecimal("1060")),
+    VIP6(BigDecimal("1900"));
+
+    /** A disabled trust fund never adds income, but the chosen level is kept for later. */
+    fun whenEnabled(enabled: Boolean): TrustFundLevel = if (enabled) this else NONE
 }
